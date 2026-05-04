@@ -7,12 +7,14 @@ __pycache__/
 .env
 .env.*
 !.env.example
+secrets/*
 data/*.db
 storage/parcelas/*
 storage/onvio_saida/*
 downloads_temp/*
 _backup_reinicio_*/
 
+!secrets/.gitkeep
 !storage/parcelas/.gitkeep
 !storage/onvio_saida/.gitkeep
 !downloads_temp/.gitkeep
