@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-title">
+    <div>
+        <h1>Historico mensal</h1>
+        <p>Resumo anual por empresa: emitida, pronta para Onvio, enviada ou aguardando API.</p>
+    </div>
+    <form class="filter" method="get">
+        <select name="ano">
+            {% for ano in historico.anos %}
+                <option value="{{ ano }}" {% if historico.ano == ano %}selected{% endif %}>{{ ano }}</option>
+            {% endfor %}
+        </select>
+        <button class="button small" type="submit">Filtrar</button>
+    </form>
+</section>
+
+<section class="legend">
+    <span><i class="sent"></i> Enviado ao Onvio</span>
+    <span><i class="ready"></i> Emitida</span>
+    <span><i class="waiting"></i> Aguardando API</span>
+    <span><i class="error"></i> Erro</span>
+    <span><i class="empty"></i> Sem registro</span>
+</section>
+
+<section class="panel history-panel">
+    <div class="table-wrap history-wrap">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th class="sticky cnpj-col">CNPJ</th>
+                    <th class="sticky company-col">Empresa</th>
+                    {% for mes in historico.meses %}
+                        <th>{{ mes.rotulo }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for linha in historico.linhas %}
+                    <tr>
+                        <td class="sticky cnpj-col">{{ linha.empresa.cnpj }}</td>
+                        <td class="sticky company-col">{{ linha.empresa.nome_empresa }}</td>
+                        {% for celula in linha.celulas %}
+                            <td class="month {{ celula.classe }}" title="{{ celula.competencia }} - {{ celula.detalhe }}">
+                                {{ celula.texto }}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="14" class="empty-row">Nenhuma empresa cadastrada.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

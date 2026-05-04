@@ -1,0 +1,15 @@
+.venv/
+.venv-win/
+.playwright-browsers/
+__pycache__/
+*.pyc
+.codex_run/
+data/*.db
+storage/parcelas/*
+storage/onvio_saida/*
+downloads_temp/*
+_backup_reinicio_*/
+
+!storage/parcelas/.gitkeep
+!storage/onvio_saida/.gitkeep
+!downloads_temp/.gitkeep

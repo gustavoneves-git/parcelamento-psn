@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-title">
+    <div>
+        <h1>Empresas</h1>
+        <p>Emita a guia do mes pela API SERPRO e suba o PDF para a pasta Onvio da empresa.</p>
+    </div>
+    <a class="button primary" href="{{ url_for('empresas.nova') }}">Nova empresa</a>
+</section>
+
+<section class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>CNPJ</th>
+                    <th>Empresa</th>
+                    <th>Onvio</th>
+                    <th>Parcela do mes</th>
+                    <th>PDF</th>
+                    <th>Acoes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for empresa in empresas %}
+                    <tr>
+                        <td>{{ empresa.cnpj }}</td>
+                        <td>
+                            <strong>{{ empresa.nome_empresa }}</strong>
+                            {% if empresa.status_empresa == "INATIVA" %}
+                                <span class="badge muted">INATIVA</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ empresa.nome_onvio or "-" }}
+                            {% if empresa.pasta_onvio %}
+                                <small>{{ empresa.pasta_onvio }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if empresa.status_emissao == "EMITIDA" %}
+                                <span class="badge ready">Emitida</span>
+                            {% elif empresa.status_emissao == "AGUARDANDO_API" %}
+                                <span class="badge waiting">Aguardando API</span>
+                            {% elif empresa.status_emissao == "ERRO_EMISSAO" %}
+                                <span class="badge error">Erro</span>
+                            {% else %}
+                                <span class="badge muted">Nao emitida</span>
+                            {% endif %}
+                            {% if empresa.mensagem %}
+                                <small>{{ empresa.mensagem }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if empresa.caminho_pdf %}
+                                <span class="pdf-name">{{ empresa.caminho_pdf.split("/")[-1] }}</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="actions">
+                            <a class="button small" href="{{ url_for('empresas.editar', empresa_id=empresa.id) }}">Editar</a>
+                            {% if empresa.status_empresa != "INATIVA" %}
+                                <form method="post" action="{{ url_for('empresas.emitir', empresa_id=empresa.id) }}">
+                                    <button class="button small" type="submit">Emitir parcela</button>
+                                </form>
+                                <form method="post" action="{{ url_for('empresas.subir_onvio', empresa_id=empresa.id) }}">
+                                    <button
+                                        class="button small {% if empresa.status_onvio == 'PRONTO_PARA_SUBIR' %}success{% endif %}"
+                                        type="submit"
+                                        {% if empresa.status_onvio != 'PRONTO_PARA_SUBIR' %}disabled{% endif %}
+                                    >
+                                        Subir para Onvio
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="empty">Nenhuma empresa cadastrada.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
