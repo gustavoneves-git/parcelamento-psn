@@ -79,6 +79,20 @@ def init_db():
                 UNIQUE (empresa_id, competencia),
                 FOREIGN KEY (empresa_id) REFERENCES empresas (id)
             );
+
+            CREATE TABLE IF NOT EXISTS serpro_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                empresa_id INTEGER,
+                competencia TEXT,
+                acao TEXT NOT NULL,
+                status TEXT NOT NULL
+                    CHECK (status IN ('INFO', 'SUCESSO', 'ERRO')),
+                http_status INTEGER,
+                mensagem TEXT NOT NULL,
+                detalhe_tecnico TEXT,
+                data_criacao TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (empresa_id) REFERENCES empresas (id)
+            );
             """
         )
 

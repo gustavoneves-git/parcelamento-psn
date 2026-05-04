@@ -31,10 +31,21 @@ Enquanto as credenciais da API SERPRO / Integra Contador / Integra Parcelamento 
 Variaveis previstas:
 
 ```text
-SERPRO_CLIENT_ID
-SERPRO_CLIENT_SECRET
+SERPRO_CONSUMER_KEY
+SERPRO_CONSUMER_SECRET
 SERPRO_CERT_PATH
+SERPRO_CERT_PASSWORD
+SERPRO_TOKEN_URL
+SERPRO_API_URL
 ```
+
+Servicos PARCSN preparados:
+
+- `PARCELASPARAGERAR162`: Consultar Parcelas Disponiveis para Impressao.
+- `GERARDAS161`: Emitir Documento de Arrecadacao.
+- `OBTERPARC164`: Consultar Parcelamento.
+
+O cliente HTTP central registra logs tecnicos na tabela `serpro_logs`, sem gravar consumer secret.
 
 ## Onvio
 

@@ -1,7 +1,11 @@
 from app.database import get_db
 from app.services.empresa_service import buscar_empresa
 from app.services.periodo_service import competencia_atual
-from app.services.serpro_service import SerproNaoConfigurado, emitir_guia_parcelamento
+from app.services.serpro_service import (
+    SerproErro,
+    SerproNaoConfigurado,
+    emitir_guia_parcelamento,
+)
 
 
 def emitir_parcela_mes_atual(empresa_id):
@@ -18,6 +22,9 @@ def emitir_parcela_mes_atual(empresa_id):
     except NotImplementedError as exc:
         _salvar_status_sem_pdf(empresa_id, competencia, "AGUARDANDO_API", str(exc))
         return _resultado(str(exc), "warning")
+    except SerproErro as exc:
+        _salvar_status_sem_pdf(empresa_id, competencia, "ERRO_EMISSAO", str(exc))
+        return _resultado(str(exc), "error")
     except Exception as exc:
         _salvar_status_sem_pdf(empresa_id, competencia, "ERRO_EMISSAO", str(exc))
         return _resultado("Erro ao emitir parcela pela API SERPRO.", "error")
