@@ -1,7 +1,9 @@
 import base64
+import json
 import re
 import time
 from pathlib import Path
+from urllib.parse import urljoin
 
 import requests
 from flask import current_app
@@ -132,6 +134,7 @@ class SerproClient:
     def chamar_servico(self, empresa, competencia, id_servico, dados, acao):
         token = self.autenticar()
         payload = self._montar_payload(empresa, id_servico, dados)
+        url = self._url_servico(id_servico)
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
@@ -148,7 +151,7 @@ class SerproClient:
             detalhe_tecnico=_payload_sem_segredos(payload),
         )
         response = requests.post(
-            self.api_url,
+            url,
             json=payload,
             headers=headers,
             timeout=self.timeout,
@@ -183,20 +186,32 @@ class SerproClient:
 
     def _montar_payload(self, empresa, id_servico, dados):
         payload = {
-            "idSistema": PARCSN_SISTEMA,
-            "idServico": id_servico,
-            "versaoSistema": PARCSN_VERSAO,
-            "dados": dados,
+            "contratante": {
+                "numero": _somente_digitos(self.contratante_cnpj or empresa["cnpj"]),
+                "tipo": 2,
+            },
+            "autorPedidoDados": {
+                "numero": _somente_digitos(self.autor_pedido_cpf or self.contratante_cnpj or empresa["cnpj"]),
+                "tipo": _tipo_documento(self.autor_pedido_cpf or self.contratante_cnpj or empresa["cnpj"]),
+            },
+            "contribuinte": {
+                "numero": _somente_digitos(empresa["cnpj"]),
+                "tipo": 2,
+            },
+            "pedidoDados": {
+                "idSistema": PARCSN_SISTEMA,
+                "idServico": id_servico,
+                "versaoSistema": PARCSN_VERSAO,
+                "dados": json.dumps(dados or {}, ensure_ascii=False),
+            },
         }
 
-        if self.contratante_cnpj:
-            payload["contratante"] = {"numero": _somente_digitos(self.contratante_cnpj)}
-        if self.autor_pedido_cpf:
-            payload["autorPedidoDados"] = {"numero": _somente_digitos(self.autor_pedido_cpf)}
-        if empresa["cnpj"]:
-            payload["contribuinte"] = {"numero": _somente_digitos(empresa["cnpj"])}
-
         return payload
+
+    def _url_servico(self, id_servico):
+        rota = "Emitir" if id_servico == SERVICO_EMITIR_DAS else "Consultar"
+        base = self.api_url.rstrip("/") + "/"
+        return urljoin(base, rota)
 
     def _requests_cert(self):
         if not self.use_mtls:
@@ -320,6 +335,10 @@ def _buscar_primeiro_valor(valor, chaves):
 
 def _somente_digitos(valor):
     return re.sub(r"\D", "", valor or "")
+
+
+def _tipo_documento(valor):
+    return 1 if len(_somente_digitos(valor)) == 11 else 2
 
 
 def _payload_sem_segredos(payload):
