@@ -19,7 +19,7 @@ def emitir_guia_parcelamento(empresa, competencia):
 
 def _configurado():
     return bool(
-        current_app.config.get("SERPRO_CLIENT_ID")
-        and current_app.config.get("SERPRO_CLIENT_SECRET")
+        current_app.config.get("SERPRO_CONSUMER_KEY")
+        and current_app.config.get("SERPRO_CONSUMER_SECRET")
         and current_app.config.get("SERPRO_CERT_PATH")
     )

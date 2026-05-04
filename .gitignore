@@ -4,6 +4,9 @@
 __pycache__/
 *.pyc
 .codex_run/
+.env
+.env.*
+!.env.example
 data/*.db
 storage/parcelas/*
 storage/onvio_saida/*
