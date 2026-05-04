@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import urljoin
 
 import requests
+from requests_pkcs12 import post as pkcs12_post
 from flask import current_app
 
 from app.services.serpro_log_service import registrar_serpro_log
@@ -17,7 +18,7 @@ SERVICO_CONSULTAR_PARCELAMENTO = "OBTERPARC164"
 SERVICO_PARCELAS_DISPONIVEIS = "PARCELASPARAGERAR162"
 SERVICO_EMITIR_DAS = "GERARDAS161"
 
-_TOKEN_CACHE = {"access_token": "", "expires_at": 0}
+_TOKEN_CACHE = {"access_token": "", "jwt_token": "", "expires_at": 0}
 
 
 class SerproNaoConfigurado(Exception):
@@ -43,7 +44,7 @@ def consultar_parcelas_disponiveis_psn(empresa):
         empresa=empresa,
         competencia=None,
         id_servico=SERVICO_PARCELAS_DISPONIVEIS,
-        dados={},
+        dados="",
         acao="consultar_parcelas_disponiveis_psn",
     )
 
@@ -62,6 +63,10 @@ def emitir_guia_parcelamento(empresa, competencia):
     """Emite a guia PSN do mes informado usando PARCSN/GERARDAS161."""
     parcela_aaaamm = _competencia_para_aaaamm(competencia)
     resposta = emitir_das_psn(empresa, parcela_aaaamm)
+    mensagem_serpro = _mensagem_serpro(resposta)
+    if mensagem_serpro and not _extrair_pdf_base64(resposta):
+        raise SerproErro(mensagem_serpro)
+
     caminho_pdf = _salvar_pdf_emitido(empresa, competencia, resposta)
 
     return {
@@ -81,6 +86,7 @@ class SerproClient:
         self.cert_path = current_app.config["SERPRO_CERT_PATH"]
         self.timeout = current_app.config["SERPRO_TIMEOUT_SECONDS"]
         self.jwt_header_name = current_app.config["SERPRO_JWT_HEADER_NAME"]
+        self.auth_role_type = current_app.config["SERPRO_AUTH_ROLE_TYPE"]
         self.contratante_cnpj = current_app.config["SERPRO_CONTRATANTE_CNPJ"]
         self.autor_pedido_cpf = current_app.config["SERPRO_AUTOR_PEDIDO_CPF"]
         self.use_mtls = current_app.config["SERPRO_USE_MTLS"]
@@ -88,21 +94,19 @@ class SerproClient:
         self._validar_config()
 
     def autenticar(self):
-        if _TOKEN_CACHE["access_token"] and _TOKEN_CACHE["expires_at"] > time.time() + 60:
-            return _TOKEN_CACHE["access_token"]
+        if (
+            _TOKEN_CACHE["access_token"]
+            and _TOKEN_CACHE["jwt_token"]
+            and _TOKEN_CACHE["expires_at"] > time.time() + 60
+        ):
+            return _TOKEN_CACHE["access_token"], _TOKEN_CACHE["jwt_token"]
 
         registrar_serpro_log(
             acao="autenticar_serpro",
             mensagem="Solicitando token SERPRO.",
             status="INFO",
         )
-        response = requests.post(
-            self.token_url,
-            auth=(self.consumer_key, self.consumer_secret),
-            data={"grant_type": "client_credentials"},
-            timeout=self.timeout,
-            cert=self._requests_cert(),
-        )
+        response = self._post_autenticacao()
 
         if response.status_code >= 400:
             registrar_serpro_log(
@@ -115,12 +119,16 @@ class SerproClient:
             raise SerproErro("Falha ao autenticar no SERPRO.")
 
         payload = response.json()
-        token = payload.get("access_token") or payload.get("jwt_token")
-        if not token:
+        access_token = payload.get("access_token")
+        jwt_token = payload.get("jwt_token")
+        if not access_token:
             raise SerproErro("Resposta de autenticacao SERPRO nao trouxe access_token.")
+        if not jwt_token:
+            raise SerproErro("Resposta de autenticacao SERPRO nao trouxe jwt_token.")
 
         expires_in = int(payload.get("expires_in") or 300)
-        _TOKEN_CACHE["access_token"] = token
+        _TOKEN_CACHE["access_token"] = access_token
+        _TOKEN_CACHE["jwt_token"] = jwt_token
         _TOKEN_CACHE["expires_at"] = time.time() + expires_in
 
         registrar_serpro_log(
@@ -129,17 +137,17 @@ class SerproClient:
             status="SUCESSO",
             http_status=response.status_code,
         )
-        return token
+        return access_token, jwt_token
 
     def chamar_servico(self, empresa, competencia, id_servico, dados, acao):
-        token = self.autenticar()
+        access_token, jwt_token = self.autenticar()
         payload = self._montar_payload(empresa, id_servico, dados)
         url = self._url_servico(id_servico)
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}",
-            self.jwt_header_name: token,
+            "Authorization": f"Bearer {access_token}",
+            self.jwt_header_name: jwt_token,
         }
 
         registrar_serpro_log(
@@ -185,6 +193,16 @@ class SerproClient:
         return response.json()
 
     def _montar_payload(self, empresa, id_servico, dados):
+        pedido_dados = {
+            "idSistema": PARCSN_SISTEMA,
+            "idServico": id_servico,
+            "versaoSistema": PARCSN_VERSAO,
+        }
+        if dados == "":
+            pedido_dados["dados"] = ""
+        elif dados is not None:
+            pedido_dados["dados"] = json.dumps(dados, ensure_ascii=False)
+
         payload = {
             "contratante": {
                 "numero": _somente_digitos(self.contratante_cnpj or empresa["cnpj"]),
@@ -198,12 +216,7 @@ class SerproClient:
                 "numero": _somente_digitos(empresa["cnpj"]),
                 "tipo": 2,
             },
-            "pedidoDados": {
-                "idSistema": PARCSN_SISTEMA,
-                "idServico": id_servico,
-                "versaoSistema": PARCSN_VERSAO,
-                "dados": json.dumps(dados or {}, ensure_ascii=False),
-            },
+            "pedidoDados": pedido_dados,
         }
 
         return payload
@@ -222,6 +235,24 @@ class SerproClient:
                 "ou converta o certificado conforme a documentacao SERPRO."
             )
         return self.cert_path
+
+    def _post_autenticacao(self):
+        kwargs = {
+            "url": self.token_url,
+            "auth": (self.consumer_key, self.consumer_secret),
+            "data": {"grant_type": "client_credentials"},
+            "headers": {"Role-Type": self.auth_role_type},
+            "timeout": self.timeout,
+        }
+
+        if self.cert_path.lower().endswith((".pfx", ".p12")):
+            return pkcs12_post(
+                **kwargs,
+                pkcs12_filename=self.cert_path,
+                pkcs12_password=current_app.config["SERPRO_CERT_PASSWORD"],
+            )
+
+        return requests.post(**kwargs, cert=self._requests_cert())
 
     def _validar_config(self):
         faltando = []
@@ -331,6 +362,18 @@ def _buscar_primeiro_valor(valor, chaves):
             if encontrado not in (None, ""):
                 return encontrado
     return None
+
+
+def _mensagem_serpro(resposta):
+    mensagens = resposta.get("mensagens") if isinstance(resposta, dict) else None
+    if not mensagens:
+        return ""
+    textos = []
+    for mensagem in mensagens:
+        codigo = mensagem.get("codigo", "") if isinstance(mensagem, dict) else ""
+        texto = mensagem.get("texto", "") if isinstance(mensagem, dict) else str(mensagem)
+        textos.append(f"{codigo} {texto}".strip())
+    return " ".join(textos)
 
 
 def _somente_digitos(valor):

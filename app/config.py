@@ -34,5 +34,6 @@ class Config:
     SERPRO_TIMEOUT_SECONDS = int(os.environ.get("SERPRO_TIMEOUT_SECONDS", "40"))
     SERPRO_USE_MTLS = os.environ.get("SERPRO_USE_MTLS", "0") == "1"
     SERPRO_JWT_HEADER_NAME = os.environ.get("SERPRO_JWT_HEADER_NAME", "jwt_token")
+    SERPRO_AUTH_ROLE_TYPE = os.environ.get("SERPRO_AUTH_ROLE_TYPE", "TERCEIROS")
     SERPRO_CONTRATANTE_CNPJ = os.environ.get("SERPRO_CONTRATANTE_CNPJ", "")
     SERPRO_AUTOR_PEDIDO_CPF = os.environ.get("SERPRO_AUTOR_PEDIDO_CPF", "")
