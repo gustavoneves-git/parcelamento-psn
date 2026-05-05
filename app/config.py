@@ -32,7 +32,7 @@ class Config:
     )
     ONVIO_EMAIL = os.environ.get("ONVIO_EMAIL", "")
     ONVIO_PASSWORD = os.environ.get("ONVIO_PASSWORD", "")
-    ONVIO_BROWSER = os.environ.get("ONVIO_BROWSER", "edge")
+    ONVIO_BROWSER = os.environ.get("ONVIO_BROWSER", "chrome")
     ONVIO_HEADLESS = os.environ.get("ONVIO_HEADLESS", "0") == "1"
     ONVIO_USER_DATA_DIR = _path_from_env("ONVIO_USER_DATA_DIR", "storage/onvio_browser")
     ONVIO_WAIT_SECONDS = int(os.environ.get("ONVIO_WAIT_SECONDS", "25"))
