@@ -1,3 +1,4 @@
+import json
 import shutil
 from pathlib import Path
 
@@ -40,6 +41,15 @@ def subir_parcela_onvio(empresa_id):
                 parcela_id=parcela["id"],
                 status="ERRO",
                 mensagem=str(exc),
+                detalhe_tecnico=json.dumps(
+                    {
+                        "modo": "selenium",
+                        "etapa": "validar_configuracao",
+                        "arquivo_pdf": origem.name,
+                        "caminho_pdf": str(origem),
+                    },
+                    ensure_ascii=True,
+                ),
             )
             return _resultado(str(exc), "warning")
         except OnvioAutomacaoErro as exc:
@@ -60,7 +70,16 @@ def subir_parcela_onvio(empresa_id):
         parcela_id=parcela["id"],
         status="SUCESSO",
         mensagem="PDF copiado para pasta Onvio.",
-        detalhe_tecnico=str(destino),
+        detalhe_tecnico=json.dumps(
+            {
+                "modo": "pasta",
+                "etapa": "copiar_pdf",
+                "arquivo_pdf": origem.name,
+                "caminho_pdf": str(origem),
+                "destino": str(destino),
+            },
+            ensure_ascii=True,
+        ),
     )
 
     mensagem = "Guia de parcelamento subida com sucesso para Onvio."

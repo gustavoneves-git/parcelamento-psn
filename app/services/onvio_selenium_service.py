@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -27,43 +28,108 @@ def subir_pdf_onvio_selenium(empresa, parcela, caminho_pdf):
         raise OnvioAutomacaoErro("PDF nao encontrado para upload no Onvio.")
 
     driver = None
+    contexto = _contexto_automacao(empresa, parcela, caminho_pdf)
     try:
-        registrar_onvio_log(
-            acao="onvio_selenium",
-            empresa_id=empresa["id"],
-            parcela_id=parcela["id"],
+        _registrar_etapa(
+            contexto,
+            etapa="iniciar",
+            status="INFO",
             mensagem="Iniciando automacao Selenium do Onvio.",
         )
-        driver = _criar_driver()
+        driver = _executar_etapa(
+            contexto,
+            "criar_navegador",
+            "Navegador Selenium iniciado.",
+            _criar_driver,
+        )
         wait = WebDriverWait(driver, current_app.config["ONVIO_WAIT_SECONDS"])
 
-        _abrir_documentos_cliente(driver, wait)
-        _autenticar_se_necessario(driver, wait)
-        _abrir_documentos_cliente(driver, wait)
-        _pesquisar_e_abrir_cliente(driver, wait, empresa)
-        _abrir_pasta_fiscal_parcelamentos(driver, wait)
-        _fazer_upload(driver, wait, caminho_pdf)
-        _gerenciar_vencimento(driver, wait, caminho_pdf.name)
+        _executar_etapa(
+            contexto,
+            "abrir_documentos_cliente",
+            "Tela de documentos do cliente carregada.",
+            _abrir_documentos_cliente,
+            driver,
+            wait,
+            driver=driver,
+        )
+        _executar_etapa(
+            contexto,
+            "verificar_sessao_login",
+            "Sessao Onvio verificada.",
+            _autenticar_se_necessario,
+            driver,
+            wait,
+            contexto,
+            driver=driver,
+        )
+        _executar_etapa(
+            contexto,
+            "retomar_documentos_cliente",
+            "Tela de documentos do cliente pronta apos verificacao de login.",
+            _abrir_documentos_cliente,
+            driver,
+            wait,
+            driver=driver,
+        )
+        _executar_etapa(
+            contexto,
+            "pesquisar_cliente",
+            "Cliente localizado e aberto no Onvio.",
+            _pesquisar_e_abrir_cliente,
+            driver,
+            wait,
+            empresa,
+            driver=driver,
+        )
+        _executar_etapa(
+            contexto,
+            "abrir_fiscal_parcelamentos",
+            "Pasta Fiscal/Parcelamentos aberta.",
+            _abrir_pasta_fiscal_parcelamentos,
+            driver,
+            wait,
+            driver=driver,
+        )
+        _executar_etapa(
+            contexto,
+            "upload",
+            "PDF enviado para o Onvio.",
+            _fazer_upload,
+            driver,
+            wait,
+            caminho_pdf,
+            driver=driver,
+        )
+        _executar_etapa(
+            contexto,
+            "gerenciar_vencimento",
+            "Vencimento preenchido e alteracao concluida.",
+            _gerenciar_vencimento,
+            driver,
+            wait,
+            caminho_pdf.name,
+            driver=driver,
+        )
 
-        registrar_onvio_log(
-            acao="onvio_selenium",
-            empresa_id=empresa["id"],
-            parcela_id=parcela["id"],
+        _registrar_etapa(
+            contexto,
+            etapa="concluir",
             status="SUCESSO",
             mensagem="Documento enviado ao Onvio com sucesso.",
-            detalhe_tecnico=caminho_pdf.name,
+            driver=driver,
         )
         return "Guia de parcelamento subida com sucesso para Onvio."
     except (OnvioConfiguracaoErro, OnvioAutomacaoErro):
         raise
     except Exception as exc:
-        registrar_onvio_log(
-            acao="onvio_selenium",
-            empresa_id=empresa["id"],
-            parcela_id=parcela["id"],
+        _registrar_etapa(
+            contexto,
+            etapa="erro_inesperado",
             status="ERRO",
             mensagem="Falha na automacao do Onvio.",
-            detalhe_tecnico=f"{type(exc).__name__}: {exc}",
+            driver=driver,
+            detalhe=f"{type(exc).__name__}: {exc}",
         )
         raise OnvioAutomacaoErro(
             "Nao foi possivel concluir o upload no Onvio. Verifique login, cliente e pasta."
@@ -71,6 +137,104 @@ def subir_pdf_onvio_selenium(empresa, parcela, caminho_pdf):
     finally:
         if driver and current_app.config["ONVIO_HEADLESS"]:
             driver.quit()
+
+
+def _contexto_automacao(empresa, parcela, caminho_pdf):
+    return {
+        "empresa_id": empresa["id"],
+        "parcela_id": parcela["id"],
+        "empresa_nome": empresa["nome_empresa"],
+        "empresa_cnpj": empresa["cnpj"],
+        "arquivo_pdf": caminho_pdf.name,
+        "caminho_pdf": str(caminho_pdf),
+        "modo": "selenium",
+    }
+
+
+def _executar_etapa(contexto, etapa, mensagem_sucesso, funcao, *args, driver=None):
+    _registrar_etapa(
+        contexto,
+        etapa=etapa,
+        status="INFO",
+        mensagem=f"Iniciando etapa: {etapa}.",
+        driver=driver,
+    )
+    try:
+        resultado = funcao(*args)
+    except OnvioAutomacaoErro as exc:
+        _registrar_etapa(
+            contexto,
+            etapa=etapa,
+            status="ERRO",
+            mensagem=str(exc),
+            driver=driver,
+            detalhe=f"{type(exc).__name__}: {exc}",
+        )
+        raise
+    except (TimeoutException, WebDriverException) as exc:
+        mensagem = (
+            "Falha de calibracao da automacao Onvio. "
+            "A tela pode ter mudado, carregado fora do tempo esperado ou o seletor nao foi encontrado."
+        )
+        _registrar_etapa(
+            contexto,
+            etapa=etapa,
+            status="ERRO",
+            mensagem=mensagem,
+            driver=driver,
+            detalhe=f"{type(exc).__name__}: {exc}",
+        )
+        raise OnvioAutomacaoErro(mensagem) from exc
+    except Exception as exc:
+        mensagem = "Falha inesperada durante a automacao Onvio."
+        _registrar_etapa(
+            contexto,
+            etapa=etapa,
+            status="ERRO",
+            mensagem=mensagem,
+            driver=driver,
+            detalhe=f"{type(exc).__name__}: {exc}",
+        )
+        raise
+
+    _registrar_etapa(
+        contexto,
+        etapa=etapa,
+        status="SUCESSO",
+        mensagem=mensagem_sucesso,
+        driver=driver,
+    )
+    return resultado
+
+
+def _registrar_etapa(contexto, etapa, status, mensagem, driver=None, detalhe=""):
+    detalhe_tecnico = {
+        "modo": contexto["modo"],
+        "etapa": etapa,
+        "empresa_nome": contexto["empresa_nome"],
+        "empresa_cnpj": contexto["empresa_cnpj"],
+        "arquivo_pdf": contexto["arquivo_pdf"],
+        "caminho_pdf": contexto["caminho_pdf"],
+        "url_atual": _url_atual(driver),
+        "detalhe": detalhe,
+    }
+    registrar_onvio_log(
+        acao=f"onvio_selenium:{etapa}",
+        empresa_id=contexto["empresa_id"],
+        parcela_id=contexto["parcela_id"],
+        status=status,
+        mensagem=mensagem,
+        detalhe_tecnico=json.dumps(detalhe_tecnico, ensure_ascii=True),
+    )
+
+
+def _url_atual(driver):
+    if not driver:
+        return ""
+    try:
+        return driver.current_url
+    except WebDriverException:
+        return ""
 
 
 def _validar_configuracao():
@@ -112,13 +276,23 @@ def _abrir_documentos_cliente(driver, wait):
     wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
 
 
-def _autenticar_se_necessario(driver, wait):
+def _autenticar_se_necessario(driver, wait, contexto):
     if not _esta_em_login(driver):
+        _registrar_etapa(
+            contexto,
+            etapa="sessao_ativa",
+            status="INFO",
+            mensagem="Sessao Onvio ja estava autenticada.",
+            driver=driver,
+        )
         return
 
-    registrar_onvio_log(
-        acao="onvio_login",
+    _registrar_etapa(
+        contexto,
+        etapa="login",
+        status="INFO",
         mensagem="Sessao Onvio nao autenticada. Executando login simples.",
+        driver=driver,
     )
     email = _primeiro_presente(
         driver,
@@ -148,6 +322,13 @@ def _autenticar_se_necessario(driver, wait):
     senha.send_keys(current_app.config["ONVIO_PASSWORD"])
     _clicar_primeiro_texto(driver, ("Entrar", "Login", "Sign in", "Acessar"))
     wait.until(lambda d: not _esta_em_login(d))
+    _registrar_etapa(
+        contexto,
+        etapa="login",
+        status="SUCESSO",
+        mensagem="Login Onvio concluido.",
+        driver=driver,
+    )
 
 
 def _esta_em_login(driver):
