@@ -134,6 +134,20 @@ def init_db():
                 data_criacao TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (empresa_id) REFERENCES empresas (id)
             );
+
+            CREATE TABLE IF NOT EXISTS onvio_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                empresa_id INTEGER,
+                parcela_id INTEGER,
+                acao TEXT NOT NULL,
+                status TEXT NOT NULL
+                    CHECK (status IN ('INFO', 'SUCESSO', 'ERRO')),
+                mensagem TEXT NOT NULL,
+                detalhe_tecnico TEXT,
+                data_criacao TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (empresa_id) REFERENCES empresas (id),
+                FOREIGN KEY (parcela_id) REFERENCES parcelas (id)
+            );
             """
         )
 

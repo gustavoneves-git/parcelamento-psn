@@ -11,6 +11,7 @@ secrets/*
 data/*.db
 storage/parcelas/*
 storage/onvio_saida/*
+storage/onvio_browser/*
 downloads_temp/*
 _backup_reinicio_*/
 

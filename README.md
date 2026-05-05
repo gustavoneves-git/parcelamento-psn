@@ -75,11 +75,36 @@ SMTP_USE_TLS=1
 
 ## Onvio
 
-Cada empresa pode ter uma `Pasta Onvio` cadastrada. Se esse campo ficar vazio, o sistema usa:
+O envio ao Onvio tem dois modos:
+
+- `pasta`: copia o PDF para uma pasta local/sincronizada.
+- `selenium`: abre o Onvio no navegador, autentica quando necessario e faz upload na pasta do cliente.
+
+Cada empresa pode ter uma `Pasta Onvio` cadastrada. Se esse campo ficar vazio e o modo for `pasta`, o sistema usa:
 
 ```text
 storage/onvio_saida/<cnpj>
 ```
+
+Configuracao do modo Selenium:
+
+```text
+ONVIO_UPLOAD_MODE=selenium
+ONVIO_URL=https://onvio.com.br/staff/#/documents/client
+ONVIO_EMAIL=
+ONVIO_PASSWORD=
+ONVIO_BROWSER=edge
+ONVIO_HEADLESS=0
+ONVIO_USER_DATA_DIR=storage/onvio_browser
+ONVIO_WAIT_SECONDS=25
+```
+
+O fluxo Selenium considera dois cenarios:
+
+- sessao Onvio ja autenticada;
+- sessao expirada, com login simples por e-mail e senha.
+
+Para o modo Selenium, rode preferencialmente pelo `run.bat` no Windows, pois ele controla o navegador do desktop.
 
 ## Como rodar
 

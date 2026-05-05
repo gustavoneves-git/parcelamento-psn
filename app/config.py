@@ -25,6 +25,17 @@ class Config:
     DATABASE_PATH = BASE_DIR / "data" / "psn.db"
     PARCELAS_PATH = BASE_DIR / "storage" / "parcelas"
     ONVIO_SAIDA_PADRAO = BASE_DIR / "storage" / "onvio_saida"
+    ONVIO_UPLOAD_MODE = os.environ.get("ONVIO_UPLOAD_MODE", "pasta")
+    ONVIO_URL = os.environ.get(
+        "ONVIO_URL",
+        "https://onvio.com.br/staff/#/documents/client",
+    )
+    ONVIO_EMAIL = os.environ.get("ONVIO_EMAIL", "")
+    ONVIO_PASSWORD = os.environ.get("ONVIO_PASSWORD", "")
+    ONVIO_BROWSER = os.environ.get("ONVIO_BROWSER", "edge")
+    ONVIO_HEADLESS = os.environ.get("ONVIO_HEADLESS", "0") == "1"
+    ONVIO_USER_DATA_DIR = _path_from_env("ONVIO_USER_DATA_DIR", "storage/onvio_browser")
+    ONVIO_WAIT_SECONDS = int(os.environ.get("ONVIO_WAIT_SECONDS", "25"))
 
     SERPRO_CONSUMER_KEY = os.environ.get("SERPRO_CONSUMER_KEY", "")
     SERPRO_CONSUMER_SECRET = os.environ.get("SERPRO_CONSUMER_SECRET", "")
