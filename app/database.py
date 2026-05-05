@@ -111,6 +111,29 @@ def init_db():
                 UNIQUE (empresa_id, parcela_aaaamm),
                 FOREIGN KEY (empresa_id) REFERENCES empresas (id)
             );
+
+            CREATE TABLE IF NOT EXISTS erros_internos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                codigo_ocorrencia TEXT NOT NULL UNIQUE,
+                sistema TEXT NOT NULL,
+                versao_sistema TEXT,
+                empresa_id INTEGER,
+                usuario TEXT,
+                tela TEXT,
+                acao TEXT,
+                rota TEXT,
+                metodo_http TEXT,
+                competencia TEXT,
+                tipo_erro TEXT NOT NULL,
+                mensagem_erro TEXT,
+                detalhe_tecnico TEXT,
+                stack_trace TEXT,
+                contexto_json TEXT,
+                email_enviado INTEGER NOT NULL DEFAULT 0,
+                email_erro TEXT,
+                data_criacao TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (empresa_id) REFERENCES empresas (id)
+            );
             """
         )
 

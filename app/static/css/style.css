@@ -87,6 +87,21 @@ a {
     padding: 20px;
 }
 
+.error-panel {
+    max-width: 680px;
+}
+
+.error-panel h1 {
+    margin-top: 0;
+}
+
+.occurrence-code {
+    background: #f6f8fa;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px 12px;
+}
+
 .table-wrap {
     overflow-x: auto;
 }

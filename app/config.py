@@ -20,6 +20,7 @@ def _path_from_env(name, default=""):
 
 
 class Config:
+    VERSION = "0.2.0-psn"
     SECRET_KEY = os.environ.get("PSN_SECRET_KEY", "psn-local-dev")
     DATABASE_PATH = BASE_DIR / "data" / "psn.db"
     PARCELAS_PATH = BASE_DIR / "storage" / "parcelas"
@@ -37,3 +38,15 @@ class Config:
     SERPRO_AUTH_ROLE_TYPE = os.environ.get("SERPRO_AUTH_ROLE_TYPE", "TERCEIROS")
     SERPRO_CONTRATANTE_CNPJ = os.environ.get("SERPRO_CONTRATANTE_CNPJ", "")
     SERPRO_AUTOR_PEDIDO_CPF = os.environ.get("SERPRO_AUTOR_PEDIDO_CPF", "")
+
+    ERROR_EMAIL_ENABLED = os.environ.get("ERROR_EMAIL_ENABLED", "0") == "1"
+    ERROR_EMAIL_TO = os.environ.get(
+        "ERROR_EMAIL_TO",
+        "gustavo.neves@consistecontabilidade.com",
+    )
+    SMTP_HOST = os.environ.get("SMTP_HOST", "")
+    SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+    SMTP_USER = os.environ.get("SMTP_USER", "")
+    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+    SMTP_FROM = os.environ.get("SMTP_FROM", SMTP_USER)
+    SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "1") == "1"

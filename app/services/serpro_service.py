@@ -29,6 +29,10 @@ class SerproErro(Exception):
     pass
 
 
+class SerproAviso(Exception):
+    pass
+
+
 def consultar_parcelamento_psn(empresa, numero_parcelamento):
     return _cliente().chamar_servico(
         empresa=empresa,
@@ -65,7 +69,7 @@ def emitir_guia_parcelamento(empresa, competencia):
     resposta = emitir_das_psn(empresa, parcela_aaaamm)
     mensagem_serpro = _mensagem_serpro(resposta)
     if mensagem_serpro and not _extrair_pdf_base64(resposta):
-        raise SerproErro(mensagem_serpro)
+        raise SerproAviso(mensagem_serpro)
 
     caminho_pdf = _salvar_pdf_emitido(empresa, competencia, resposta)
 
@@ -315,6 +319,15 @@ def _extrair_pdf_base64(valor):
             encontrado = _extrair_pdf_base64(item)
             if encontrado:
                 return encontrado
+    if isinstance(valor, str):
+        texto = valor.strip()
+        if _parece_base64_pdf(texto):
+            return texto
+        if texto.startswith("{") or texto.startswith("["):
+            try:
+                return _extrair_pdf_base64(json.loads(texto))
+            except json.JSONDecodeError:
+                return ""
     return ""
 
 
@@ -334,17 +347,12 @@ def _limpar_prefixo_base64(texto):
 
 
 def _nome_pdf(empresa, competencia, resposta):
-    numero_parcelamento = _buscar_primeiro_valor(
-        resposta, ("numeroParcelamento", "parcelamento")
-    ) or "parcelamento"
-    numero_parcela = _buscar_primeiro_valor(
-        resposta, ("numeroParcela", "parcela", "parcelaParaEmitir")
-    ) or _competencia_para_aaaamm(competencia)
+    competencia_aaaamm = _competencia_para_aaaamm(competencia)
     nome = (
         f"{empresa['nome_empresa']} - {empresa['cnpj']} - "
-        f"{numero_parcelamento} - parcela {numero_parcela}.pdf"
+        f"parcelamento_simples_nacional - competencia_{competencia_aaaamm}.pdf"
     )
-    return re.sub(r'[<>:"/\\|?*]', "", nome).strip()
+    return re.sub(r'[<>:"/\\|?*]', "", nome).strip().lower()
 
 
 def _buscar_primeiro_valor(valor, chaves):

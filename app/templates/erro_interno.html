@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel error-panel">
+    <h1>Erro interno</h1>
+    <p>Ocorreu um erro interno no sistema. A equipe responsavel foi notificada.</p>
+    <p class="occurrence-code">Codigo da ocorrencia: <strong>{{ codigo_ocorrencia }}</strong></p>
+    <a class="button primary" href="{{ url_for('empresas.index') }}">Voltar para Empresas</a>
+</section>
+{% endblock %}

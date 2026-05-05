@@ -6,6 +6,7 @@ from app.services.psn_disponibilidade_service import (
     marcar_disponibilidade_emitida,
 )
 from app.services.serpro_service import (
+    SerproAviso,
     SerproErro,
     SerproNaoConfigurado,
     emitir_guia_parcelamento,
@@ -41,6 +42,9 @@ def emitir_parcela_competencia(empresa_id, competencia):
     except NotImplementedError as exc:
         _salvar_status_sem_pdf(empresa_id, competencia, "AGUARDANDO_API", str(exc))
         return _resultado(str(exc), "warning")
+    except SerproAviso as exc:
+        _salvar_status_sem_pdf(empresa_id, competencia, "AGUARDANDO_API", str(exc))
+        return _resultado(_mensagem_amigavel_serpro(str(exc)), "warning")
     except SerproErro as exc:
         _salvar_status_sem_pdf(empresa_id, competencia, "ERRO_EMISSAO", str(exc))
         return _resultado(str(exc), "error")
@@ -142,3 +146,14 @@ def _salvar_parcela_emitida(empresa_id, competencia, guia):
 
 def _resultado(mensagem, categoria):
     return {"mensagem": mensagem, "categoria": categoria}
+
+
+def _mensagem_amigavel_serpro(mensagem):
+    texto = mensagem.lower()
+    if "indispon" in texto:
+        return "A parcela ainda nao esta disponivel para emissao no SERPRO."
+    if "pagamento" in texto or "paga" in texto:
+        return "A parcela nao esta disponivel porque pode ja constar como paga."
+    if "futuro" in texto:
+        return "A competencia informada ainda nao esta liberada para emissao."
+    return mensagem

@@ -49,6 +49,30 @@ Servicos PARCSN preparados:
 O cliente HTTP central registra logs tecnicos na tabela `serpro_logs`, sem gravar consumer secret.
 As disponibilidades consultadas ficam na tabela `psn_disponibilidades`, incluindo casos em que a API informa que nao ha parcela liberada.
 
+## Erros internos
+
+Avisos normais da API SERPRO, como parcela indisponivel ou nenhuma parcela liberada, sao tratados como avisos operacionais.
+
+Erros internos reais do sistema recebem:
+
+- codigo unico de ocorrencia;
+- tela amigavel para o usuario;
+- log tecnico completo na tabela `erros_internos`;
+- tentativa opcional de envio de e-mail para suporte.
+
+Configuracao opcional de e-mail:
+
+```text
+ERROR_EMAIL_ENABLED=1
+ERROR_EMAIL_TO=gustavo.neves@consistecontabilidade.com
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=
+SMTP_USE_TLS=1
+```
+
 ## Onvio
 
 Cada empresa pode ter uma `Pasta Onvio` cadastrada. Se esse campo ficar vazio, o sistema usa:
