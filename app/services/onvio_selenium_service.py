@@ -1,4 +1,6 @@
 import json
+import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -254,21 +256,42 @@ def _criar_driver():
     if browser not in ("edge", "chrome"):
         raise OnvioConfiguracaoErro("ONVIO_BROWSER deve ser edge ou chrome.")
 
-    user_data_dir = Path(current_app.config["ONVIO_USER_DATA_DIR"])
+    user_data_dir = _resolver_user_data_dir(browser)
     user_data_dir.mkdir(parents=True, exist_ok=True)
 
     if browser == "chrome":
         options = webdriver.ChromeOptions()
-        options.add_argument(f"--user-data-dir={user_data_dir}")
+        _aplicar_opcoes_navegador(options, user_data_dir)
         if current_app.config["ONVIO_HEADLESS"]:
             options.add_argument("--headless=new")
         return webdriver.Chrome(options=options)
 
     options = webdriver.EdgeOptions()
-    options.add_argument(f"--user-data-dir={user_data_dir}")
+    _aplicar_opcoes_navegador(options, user_data_dir)
     if current_app.config["ONVIO_HEADLESS"]:
         options.add_argument("--headless=new")
     return webdriver.Edge(options=options)
+
+
+def _resolver_user_data_dir(browser):
+    configurado = Path(current_app.config["ONVIO_USER_DATA_DIR"])
+    if sys.platform != "win32":
+        return configurado
+
+    texto = str(configurado)
+    if texto.startswith("\\\\wsl.localhost\\") or texto.startswith("\\\\wsl$\\"):
+        local_appdata = os.environ.get("LOCALAPPDATA")
+        if local_appdata:
+            return Path(local_appdata) / "PSN Parcelamento" / f"onvio_{browser}_profile"
+
+    return configurado
+
+
+def _aplicar_opcoes_navegador(options, user_data_dir):
+    options.add_argument(f"--user-data-dir={user_data_dir}")
+    options.add_argument("--no-first-run")
+    options.add_argument("--no-default-browser-check")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
 
 
 def _abrir_documentos_cliente(driver, wait):
@@ -294,10 +317,14 @@ def _autenticar_se_necessario(driver, wait, contexto):
         mensagem="Sessao Onvio nao autenticada. Executando login simples.",
         driver=driver,
     )
+    _abrir_formulario_login_se_necessario(driver, wait)
     email = _primeiro_presente(
         driver,
         (
+            "input[name='username']",
+            "input#username",
             "input[type='email']",
+            "input[name='uid']",
             "input[name*='email' i]",
             "input[id*='email' i]",
             "input[type='text']",
@@ -307,17 +334,36 @@ def _autenticar_se_necessario(driver, wait, contexto):
         driver,
         (
             "input[type='password']",
+            "input[name='password']",
+            "input[name='pwd']",
+            "input#password",
+            "input#pwd",
             "input[name*='password' i]",
             "input[id*='password' i]",
             "input[name*='senha' i]",
             "input[id*='senha' i]",
         ),
     )
-    if not email or not senha:
-        raise OnvioAutomacaoErro("Tela de login Onvio detectada, mas campos nao foram encontrados.")
+    if not email:
+        raise OnvioAutomacaoErro("Tela de login Onvio detectada, mas campo de e-mail nao foi encontrado.")
 
     email.clear()
     email.send_keys(current_app.config["ONVIO_EMAIL"])
+    if not senha:
+        _clicar_primeiro_texto(driver, ("Entrar", "Continuar", "Continue", "Next"))
+        senha = wait.until(
+            lambda d: _primeiro_presente(
+                d,
+                (
+                    "input[type='password']",
+                    "input[name='password']",
+                    "input[name='pwd']",
+                    "input#password",
+                    "input#pwd",
+                ),
+            )
+        )
+
     senha.clear()
     senha.send_keys(current_app.config["ONVIO_PASSWORD"])
     _clicar_primeiro_texto(driver, ("Entrar", "Login", "Sign in", "Acessar"))
@@ -329,6 +375,19 @@ def _autenticar_se_necessario(driver, wait, contexto):
         mensagem="Login Onvio concluido.",
         driver=driver,
     )
+
+
+def _abrir_formulario_login_se_necessario(driver, wait):
+    if _primeiro_presente(driver, ("input[name='username']", "input#username", "input[type='email']")):
+        return
+
+    url = driver.current_url.lower()
+    if "onvio.com.br/login" in url:
+        _clicar_primeiro_texto(driver, ("Entrar", "Login", "Sign in", "Acessar"))
+        wait.until(
+            lambda d: "auth.thomsonreuters.com" in d.current_url.lower()
+            or bool(_primeiro_presente(d, ("input[name='username']", "input#username", "input[type='email']")))
+        )
 
 
 def _esta_em_login(driver):
