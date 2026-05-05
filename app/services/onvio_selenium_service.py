@@ -367,7 +367,13 @@ def _autenticar_se_necessario(driver, wait, contexto):
     senha.clear()
     senha.send_keys(current_app.config["ONVIO_PASSWORD"])
     _clicar_primeiro_texto(driver, ("Entrar", "Login", "Sign in", "Acessar"))
-    wait.until(lambda d: not _esta_em_login(d))
+    wait.until(lambda d: _esta_em_mfa(d) or not _esta_em_login(d))
+    if _esta_em_mfa(driver):
+        raise OnvioAutomacaoErro(
+            "Onvio solicitou validacao adicional de login. "
+            "Conclua a autenticacao manualmente no Chrome e tente subir novamente."
+        )
+
     _registrar_etapa(
         contexto,
         etapa="login",
@@ -383,7 +389,15 @@ def _abrir_formulario_login_se_necessario(driver, wait):
 
     url = driver.current_url.lower()
     if "onvio.com.br/login" in url:
-        _clicar_primeiro_texto(driver, ("Entrar", "Login", "Sign in", "Acessar"))
+        try:
+            botao = wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "#trauth-continue-signin-btn"))
+            )
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", botao)
+            botao.click()
+        except Exception:
+            _clicar_primeiro_texto(driver, ("Entrar", "Login", "Sign in", "Acessar"))
+
         wait.until(
             lambda d: "auth.thomsonreuters.com" in d.current_url.lower()
             or bool(_primeiro_presente(d, ("input[name='username']", "input#username", "input[type='email']")))
@@ -395,6 +409,20 @@ def _esta_em_login(driver):
     if "login" in url or "signin" in url or "auth" in url:
         return True
     return bool(driver.find_elements(By.CSS_SELECTOR, "input[type='password']"))
+
+
+def _esta_em_mfa(driver):
+    url = driver.current_url.lower()
+    if "mfa" in url or "multi-factor" in url or "multifactor" in url:
+        return True
+    seletores = (
+        "input[name*='mfa' i]",
+        "input[id*='mfa' i]",
+        "input[name*='code' i]",
+        "input[placeholder*='codigo' i]",
+        "input[placeholder*='código' i]",
+    )
+    return any(driver.find_elements(By.CSS_SELECTOR, seletor) for seletor in seletores)
 
 
 def _pesquisar_e_abrir_cliente(driver, wait, empresa):
