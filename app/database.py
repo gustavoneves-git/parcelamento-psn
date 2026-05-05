@@ -93,6 +93,24 @@ def init_db():
                 data_criacao TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (empresa_id) REFERENCES empresas (id)
             );
+
+            CREATE TABLE IF NOT EXISTS psn_disponibilidades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                empresa_id INTEGER NOT NULL,
+                competencia TEXT NOT NULL,
+                parcela_aaaamm TEXT NOT NULL,
+                status_disponibilidade TEXT NOT NULL
+                    CHECK (status_disponibilidade IN (
+                        'DISPONIVEL',
+                        'INDISPONIVEL',
+                        'ERRO_CONSULTA'
+                    )),
+                mensagem TEXT,
+                resposta_resumo TEXT,
+                data_consulta TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (empresa_id, parcela_aaaamm),
+                FOREIGN KEY (empresa_id) REFERENCES empresas (id)
+            );
             """
         )
 

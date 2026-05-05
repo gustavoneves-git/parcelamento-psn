@@ -13,10 +13,11 @@ As paginas antigas de dashboard e parcelas emitidas foram removidas para reduzir
 
 1. Cadastre a empresa.
 2. Configure a pasta Onvio da empresa, quando houver.
-3. Clique em `Emitir parcela`.
-4. Quando a integracao SERPRO estiver configurada, o sistema vai emitir a guia do mes e salvar o PDF.
-5. Com o PDF emitido, o botao `Subir para Onvio` fica verde.
-6. Ao subir, o PDF e copiado para a pasta Onvio e o botao volta ao estado cinza.
+3. Clique em `Consultar SERPRO`.
+4. O sistema consulta o PARCSN antes de qualquer emissao.
+5. Se houver competencia liberada, a tela mostra o botao `Emitir` para aquela competencia.
+6. Ao emitir, o sistema salva o PDF e deixa `Subir para Onvio` disponivel.
+7. Ao subir, o PDF e copiado para a pasta Onvio e o botao volta ao estado cinza.
 
 ## SERPRO
 
@@ -46,6 +47,7 @@ Servicos PARCSN preparados:
 - `OBTERPARC164`: Consultar Parcelamento.
 
 O cliente HTTP central registra logs tecnicos na tabela `serpro_logs`, sem gravar consumer secret.
+As disponibilidades consultadas ficam na tabela `psn_disponibilidades`, incluindo casos em que a API informa que nao ha parcela liberada.
 
 ## Onvio
 

@@ -7,7 +7,11 @@ from app.services.empresa_service import (
     listar_empresas_com_parcela_atual,
 )
 from app.services.onvio_service import subir_parcela_onvio
-from app.services.parcela_service import emitir_parcela_mes_atual
+from app.services.parcela_service import emitir_parcela_competencia
+from app.services.psn_disponibilidade_service import (
+    consultar_e_salvar_disponibilidades,
+    listar_disponibilidades_por_empresa,
+)
 
 
 empresas_bp = Blueprint("empresas", __name__, url_prefix="/empresas")
@@ -15,7 +19,11 @@ empresas_bp = Blueprint("empresas", __name__, url_prefix="/empresas")
 
 @empresas_bp.route("/")
 def index():
-    return render_template("empresas.html", empresas=listar_empresas_com_parcela_atual())
+    return render_template(
+        "empresas.html",
+        empresas=listar_empresas_com_parcela_atual(),
+        disponibilidades_por_empresa=listar_disponibilidades_por_empresa(),
+    )
 
 
 @empresas_bp.route("/nova", methods=["GET", "POST"])
@@ -52,7 +60,15 @@ def editar(empresa_id):
 
 @empresas_bp.route("/<int:empresa_id>/emitir", methods=["POST"])
 def emitir(empresa_id):
-    resultado = emitir_parcela_mes_atual(empresa_id)
+    competencia = request.form.get("competencia") or ""
+    resultado = emitir_parcela_competencia(empresa_id, competencia)
+    flash(resultado["mensagem"], resultado["categoria"])
+    return redirect(url_for("empresas.index"))
+
+
+@empresas_bp.route("/<int:empresa_id>/consultar-serpro", methods=["POST"])
+def consultar_serpro(empresa_id):
+    resultado = consultar_e_salvar_disponibilidades(empresa_id)
     flash(resultado["mensagem"], resultado["categoria"])
     return redirect(url_for("empresas.index"))
 

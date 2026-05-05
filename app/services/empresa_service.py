@@ -1,9 +1,6 @@
 import re
 
 from app.database import get_db
-from app.services.periodo_service import competencia_atual
-
-
 def limpar_cnpj(cnpj):
     return re.sub(r"\D", "", cnpj or "")
 
@@ -31,7 +28,6 @@ def validar_empresa(dados, empresa_id=None):
 
 
 def listar_empresas_com_parcela_atual():
-    competencia = competencia_atual()
     return get_db().execute(
         """
         SELECT
@@ -49,10 +45,15 @@ def listar_empresas_com_parcela_atual():
         FROM empresas
         LEFT JOIN parcelas
             ON parcelas.empresa_id = empresas.id
-           AND parcelas.competencia = ?
+           AND parcelas.id = (
+                SELECT id
+                FROM parcelas AS ultima_parcela
+                WHERE ultima_parcela.empresa_id = empresas.id
+                ORDER BY ultima_parcela.data_atualizacao DESC, ultima_parcela.id DESC
+                LIMIT 1
+           )
         ORDER BY empresas.nome_empresa
-        """,
-        (competencia,),
+        """
     ).fetchall()
 
 

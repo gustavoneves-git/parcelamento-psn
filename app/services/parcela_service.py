@@ -1,6 +1,10 @@
 from app.database import get_db
 from app.services.empresa_service import buscar_empresa
 from app.services.periodo_service import competencia_atual
+from app.services.psn_disponibilidade_service import (
+    buscar_disponibilidade_emitivel,
+    marcar_disponibilidade_emitida,
+)
 from app.services.serpro_service import (
     SerproErro,
     SerproNaoConfigurado,
@@ -9,11 +13,26 @@ from app.services.serpro_service import (
 
 
 def emitir_parcela_mes_atual(empresa_id):
+    return emitir_parcela_competencia(empresa_id, competencia_atual())
+
+
+def emitir_parcela_competencia(empresa_id, competencia):
     empresa = buscar_empresa(empresa_id)
     if empresa is None:
         return _resultado("Empresa nao encontrada.", "error")
 
-    competencia = competencia_atual()
+    if not buscar_disponibilidade_emitivel(empresa_id, competencia):
+        _salvar_status_sem_pdf(
+            empresa_id,
+            competencia,
+            "AGUARDANDO_API",
+            "Consulte o SERPRO antes de emitir. Essa competencia ainda nao esta marcada como disponivel.",
+        )
+        return _resultado(
+            "Consulte o SERPRO antes de emitir. Essa competencia ainda nao esta liberada.",
+            "warning",
+        )
+
     try:
         guia = emitir_guia_parcelamento(empresa, competencia)
     except SerproNaoConfigurado as exc:
@@ -30,7 +49,12 @@ def emitir_parcela_mes_atual(empresa_id):
         return _resultado("Erro ao emitir parcela pela API SERPRO.", "error")
 
     _salvar_parcela_emitida(empresa_id, competencia, guia)
-    return _resultado("Parcela desse mes emitida com sucesso.", "success")
+    marcar_disponibilidade_emitida(
+        empresa_id,
+        competencia,
+        "Parcela emitida com sucesso.",
+    )
+    return _resultado(f"Parcela {competencia} emitida com sucesso.", "success")
 
 
 def buscar_parcela_atual(empresa_id):
@@ -42,6 +66,20 @@ def buscar_parcela_atual(empresa_id):
           AND competencia = ?
         """,
         (empresa_id, competencia_atual()),
+    ).fetchone()
+
+
+def buscar_parcela_pronta_onvio(empresa_id):
+    return get_db().execute(
+        """
+        SELECT *
+        FROM parcelas
+        WHERE empresa_id = ?
+          AND status_onvio = 'PRONTO_PARA_SUBIR'
+        ORDER BY data_atualizacao DESC, id DESC
+        LIMIT 1
+        """,
+        (empresa_id,),
     ).fetchone()
 
 

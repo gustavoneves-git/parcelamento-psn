@@ -5,12 +5,12 @@ from flask import current_app
 
 from app.database import get_db
 from app.services.empresa_service import buscar_empresa
-from app.services.parcela_service import buscar_parcela_atual
+from app.services.parcela_service import buscar_parcela_pronta_onvio
 
 
 def subir_parcela_onvio(empresa_id):
     empresa = buscar_empresa(empresa_id)
-    parcela = buscar_parcela_atual(empresa_id)
+    parcela = buscar_parcela_pronta_onvio(empresa_id)
 
     if empresa is None:
         return _resultado("Empresa nao encontrada.", "error")

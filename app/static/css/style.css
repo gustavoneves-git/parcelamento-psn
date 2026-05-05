@@ -169,6 +169,19 @@ td small {
     margin: 0;
 }
 
+.availability-list {
+    display: grid;
+    gap: 8px;
+}
+
+.availability-list form {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+}
+
 .badge {
     background: #eef2f4;
     border: 1px solid #d3dde5;

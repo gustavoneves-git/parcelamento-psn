@@ -17,7 +17,7 @@
                     <th>CNPJ</th>
                     <th>Empresa</th>
                     <th>Onvio</th>
-                    <th>Parcela do mes</th>
+                    <th>Disponibilidade PSN</th>
                     <th>PDF</th>
                     <th>Acoes</th>
                 </tr>
@@ -39,17 +39,35 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if empresa.status_emissao == "EMITIDA" %}
+                            {% set disponibilidades = disponibilidades_por_empresa.get(empresa.id, []) %}
+                            {% set liberadas = disponibilidades | selectattr("status_disponibilidade", "equalto", "DISPONIVEL") | list %}
+                            {% if liberadas %}
+                                <div class="availability-list">
+                                    {% for item in liberadas %}
+                                        <form method="post" action="{{ url_for('empresas.emitir', empresa_id=empresa.id) }}">
+                                            <input type="hidden" name="competencia" value="{{ item.competencia }}">
+                                            <span class="badge ready">{{ item.competencia }}</span>
+                                            <button class="button small success" type="submit">Emitir</button>
+                                        </form>
+                                    {% endfor %}
+                                </div>
+                            {% elif disponibilidades %}
+                                {% set item = disponibilidades[0] %}
+                                {% if item.status_disponibilidade == "ERRO_CONSULTA" %}
+                                    <span class="badge error">Consulta com erro</span>
+                                {% else %}
+                                    <span class="badge waiting">Nada liberado</span>
+                                {% endif %}
+                                {% if item.mensagem %}
+                                    <small>{{ item.mensagem }}</small>
+                                {% endif %}
+                            {% elif empresa.status_emissao == "EMITIDA" %}
                                 <span class="badge ready">Emitida</span>
-                            {% elif empresa.status_emissao == "AGUARDANDO_API" %}
-                                <span class="badge waiting">Aguardando API</span>
-                            {% elif empresa.status_emissao == "ERRO_EMISSAO" %}
-                                <span class="badge error">Erro</span>
+                                {% if empresa.mensagem %}
+                                    <small>{{ empresa.mensagem }}</small>
+                                {% endif %}
                             {% else %}
-                                <span class="badge muted">Nao emitida</span>
-                            {% endif %}
-                            {% if empresa.mensagem %}
-                                <small>{{ empresa.mensagem }}</small>
+                                <span class="badge muted">Consultar SERPRO</span>
                             {% endif %}
                         </td>
                         <td>
@@ -62,8 +80,8 @@
                         <td class="actions">
                             <a class="button small" href="{{ url_for('empresas.editar', empresa_id=empresa.id) }}">Editar</a>
                             {% if empresa.status_empresa != "INATIVA" %}
-                                <form method="post" action="{{ url_for('empresas.emitir', empresa_id=empresa.id) }}">
-                                    <button class="button small" type="submit">Emitir parcela</button>
+                                <form method="post" action="{{ url_for('empresas.consultar_serpro', empresa_id=empresa.id) }}">
+                                    <button class="button small" type="submit">Consultar SERPRO</button>
                                 </form>
                                 <form method="post" action="{{ url_for('empresas.subir_onvio', empresa_id=empresa.id) }}">
                                     <button
