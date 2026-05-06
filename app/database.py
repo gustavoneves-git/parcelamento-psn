@@ -99,6 +99,7 @@ def init_db():
                 empresa_id INTEGER NOT NULL,
                 competencia TEXT NOT NULL,
                 parcela_aaaamm TEXT NOT NULL,
+                valor REAL,
                 status_disponibilidade TEXT NOT NULL
                     CHECK (status_disponibilidade IN (
                         'DISPONIVEL',
@@ -150,6 +151,16 @@ def init_db():
             );
             """
         )
+        _ensure_column(conn, "psn_disponibilidades", "valor", "REAL")
+
+
+def _ensure_column(conn, table_name, column_name, definition):
+    columns = {
+        row[1]
+        for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()
+    }
+    if column_name not in columns:
+        conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
 
 
 def init_app(app):

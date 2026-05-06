@@ -27,9 +27,15 @@ def validar_empresa(dados, empresa_id=None):
     return erros
 
 
-def listar_empresas_com_parcela_atual():
+def listar_empresas_com_parcela_atual(status_empresa="ATIVA"):
+    filtro_status = ""
+    parametros = []
+    if status_empresa in ("ATIVA", "INATIVA"):
+        filtro_status = "WHERE empresas.status_empresa = ?"
+        parametros.append(status_empresa)
+
     return get_db().execute(
-        """
+        f"""
         SELECT
             empresas.*,
             parcelas.id AS parcela_id,
@@ -52,8 +58,10 @@ def listar_empresas_com_parcela_atual():
                 ORDER BY ultima_parcela.data_atualizacao DESC, ultima_parcela.id DESC
                 LIMIT 1
            )
+        {filtro_status}
         ORDER BY empresas.nome_empresa
-        """
+        """,
+        parametros,
     ).fetchall()
 
 

@@ -71,10 +71,10 @@ def _celula(competencia, parcela):
 
     if parcela["status_onvio"] == "ENVIADO":
         classe = "sent"
-        texto = "Onvio"
+        texto = _formatar_valor(parcela["valor"]) or "Onvio"
     elif parcela["status_onvio"] == "PRONTO_PARA_SUBIR":
         classe = "ready"
-        texto = "Emitida"
+        texto = _formatar_valor(parcela["valor"]) or "Emitida"
     elif parcela["status_emissao"] == "AGUARDANDO_API":
         classe = "waiting"
         texto = "API"
@@ -91,3 +91,14 @@ def _celula(competencia, parcela):
         "texto": texto,
         "detalhe": parcela["mensagem"] or "",
     }
+
+
+def _formatar_valor(valor):
+    if valor is None:
+        return ""
+    try:
+        numero = float(valor)
+    except (TypeError, ValueError):
+        return ""
+    texto = f"{numero:,.2f}"
+    return "R$ " + texto.replace(",", "X").replace(".", ",").replace("X", ".")

@@ -22,7 +22,8 @@ def emitir_parcela_competencia(empresa_id, competencia):
     if empresa is None:
         return _resultado("Empresa nao encontrada.", "error")
 
-    if not buscar_disponibilidade_emitivel(empresa_id, competencia):
+    disponibilidade = buscar_disponibilidade_emitivel(empresa_id, competencia)
+    if not disponibilidade:
         _salvar_status_sem_pdf(
             empresa_id,
             competencia,
@@ -52,7 +53,7 @@ def emitir_parcela_competencia(empresa_id, competencia):
         _salvar_status_sem_pdf(empresa_id, competencia, "ERRO_EMISSAO", str(exc))
         return _resultado("Erro ao emitir parcela pela API SERPRO.", "error")
 
-    _salvar_parcela_emitida(empresa_id, competencia, guia)
+    _salvar_parcela_emitida(empresa_id, competencia, guia, disponibilidade)
     marcar_disponibilidade_emitida(
         empresa_id,
         competencia,
@@ -108,7 +109,11 @@ def _salvar_status_sem_pdf(empresa_id, competencia, status, mensagem):
     get_db().commit()
 
 
-def _salvar_parcela_emitida(empresa_id, competencia, guia):
+def _salvar_parcela_emitida(empresa_id, competencia, guia, disponibilidade=None):
+    valor = guia.get("valor")
+    if valor in (None, "") and disponibilidade is not None:
+        valor = disponibilidade["valor"]
+
     get_db().execute(
         """
         INSERT INTO parcelas (
@@ -135,7 +140,7 @@ def _salvar_parcela_emitida(empresa_id, competencia, guia):
         (
             empresa_id,
             competencia,
-            guia.get("valor"),
+            valor,
             guia.get("vencimento"),
             guia.get("caminho_pdf"),
             "Parcela desse mes emitida com sucesso.",

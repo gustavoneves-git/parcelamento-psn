@@ -19,10 +19,16 @@ empresas_bp = Blueprint("empresas", __name__, url_prefix="/empresas")
 
 @empresas_bp.route("/")
 def index():
+    filtro_status = request.args.get("status", "ATIVA").upper()
+    if filtro_status not in ("ATIVA", "INATIVA", "TODAS"):
+        filtro_status = "ATIVA"
+    status_consulta = None if filtro_status == "TODAS" else filtro_status
+
     return render_template(
         "empresas.html",
-        empresas=listar_empresas_com_parcela_atual(),
+        empresas=listar_empresas_com_parcela_atual(status_consulta),
         disponibilidades_por_empresa=listar_disponibilidades_por_empresa(),
+        filtro_status=filtro_status,
     )
 
 

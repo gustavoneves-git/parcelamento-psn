@@ -106,6 +106,26 @@ a {
     overflow-x: auto;
 }
 
+.filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.filter-link {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 7px 11px;
+}
+
+.filter-link.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
 table {
     border-collapse: collapse;
     width: 100%;

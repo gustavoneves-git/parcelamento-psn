@@ -74,7 +74,12 @@ def emitir_guia_parcelamento(empresa, competencia):
     caminho_pdf = _salvar_pdf_emitido(empresa, competencia, resposta)
 
     return {
-        "valor": _buscar_primeiro_valor(resposta, ("valor", "valorDAS", "valorTotal")),
+        "valor": _normalizar_valor(
+            _buscar_primeiro_valor(
+                resposta,
+                ("valor", "valorDAS", "valorTotal", "valorParcela", "valorPrincipal"),
+            )
+        ),
         "vencimento": _buscar_primeiro_valor(resposta, ("vencimento", "dataVencimento")),
         "caminho_pdf": str(caminho_pdf),
         "resposta": resposta,
@@ -369,7 +374,28 @@ def _buscar_primeiro_valor(valor, chaves):
             encontrado = _buscar_primeiro_valor(item, chaves)
             if encontrado not in (None, ""):
                 return encontrado
+    if isinstance(valor, str):
+        texto = valor.strip()
+        if texto.startswith("{") or texto.startswith("["):
+            try:
+                return _buscar_primeiro_valor(json.loads(texto), chaves)
+            except json.JSONDecodeError:
+                return None
     return None
+
+
+def _normalizar_valor(valor):
+    if valor in (None, ""):
+        return None
+    if isinstance(valor, (int, float)):
+        return float(valor)
+    texto = str(valor).strip().replace("R$", "").replace(" ", "")
+    if "," in texto:
+        texto = texto.replace(".", "").replace(",", ".")
+    try:
+        return float(texto)
+    except ValueError:
+        return None
 
 
 def _mensagem_serpro(resposta):

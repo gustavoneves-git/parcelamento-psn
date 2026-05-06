@@ -38,6 +38,7 @@ def consultar_e_salvar_disponibilidades(empresa_id):
             empresa_id=empresa_id,
             competencia=competencia_atual(),
             parcela_aaaamm=_competencia_para_aaaamm(competencia_atual()),
+            valor=None,
             status="INDISPONIVEL",
             mensagem=mensagem,
             resposta_resumo=_resumo_resposta(resposta),
@@ -57,6 +58,7 @@ def consultar_e_salvar_disponibilidades(empresa_id):
             empresa_id=empresa_id,
             competencia=parcela["competencia"],
             parcela_aaaamm=parcela["parcela_aaaamm"],
+            valor=parcela.get("valor"),
             status="DISPONIVEL",
             mensagem=parcela.get("mensagem") or "Parcela disponivel para emissao.",
             resposta_resumo=_resumo_resposta(resposta),
@@ -132,6 +134,7 @@ def extrair_parcelas_disponiveis(resposta):
             {
                 "parcela_aaaamm": parcela_aaaamm,
                 "competencia": _aaaamm_para_competencia(parcela_aaaamm),
+                "valor": _extrair_valor_item(item),
                 "mensagem": _extrair_mensagem_item(item),
             }
         )
@@ -219,10 +222,34 @@ def _extrair_mensagem_item(item):
     return ""
 
 
+def _extrair_valor_item(item):
+    if not isinstance(item, dict):
+        return None
+    for chave in ("valor", "valorDAS", "valorTotal", "valorParcela", "valorPrincipal"):
+        if item.get(chave) not in (None, ""):
+            return _normalizar_valor(item[chave])
+    return None
+
+
+def _normalizar_valor(valor):
+    if valor in (None, ""):
+        return None
+    if isinstance(valor, (int, float)):
+        return float(valor)
+    texto = str(valor).strip().replace("R$", "").replace(" ", "")
+    if "," in texto:
+        texto = texto.replace(".", "").replace(",", ".")
+    try:
+        return float(texto)
+    except ValueError:
+        return None
+
+
 def _salvar_disponibilidade(
     empresa_id,
     competencia,
     parcela_aaaamm,
+    valor,
     status,
     mensagem,
     resposta_resumo,
@@ -233,18 +260,20 @@ def _salvar_disponibilidade(
             empresa_id,
             competencia,
             parcela_aaaamm,
+            valor,
             status_disponibilidade,
             mensagem,
             resposta_resumo
-        ) VALUES (?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(empresa_id, parcela_aaaamm) DO UPDATE SET
             competencia = excluded.competencia,
+            valor = excluded.valor,
             status_disponibilidade = excluded.status_disponibilidade,
             mensagem = excluded.mensagem,
             resposta_resumo = excluded.resposta_resumo,
             data_consulta = CURRENT_TIMESTAMP
         """,
-        (empresa_id, competencia, parcela_aaaamm, status, mensagem, resposta_resumo),
+        (empresa_id, competencia, parcela_aaaamm, valor, status, mensagem, resposta_resumo),
     )
     get_db().commit()
 
@@ -269,6 +298,7 @@ def _registrar_indisponibilidade_tecnica(empresa_id, mensagem):
         empresa_id=empresa_id,
         competencia=competencia_atual(),
         parcela_aaaamm=_competencia_para_aaaamm(competencia_atual()),
+        valor=None,
         status="ERRO_CONSULTA",
         mensagem=mensagem,
         resposta_resumo=mensagem,
