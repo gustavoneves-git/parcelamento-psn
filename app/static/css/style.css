@@ -4,9 +4,9 @@
     --text: #1f2933;
     --muted: #647381;
     --line: #d8e0e6;
-    --primary: #155f56;
-    --primary-dark: #0f4c45;
-    --success: #217a4d;
+    --primary: #057fbe;
+    --primary-dark: #045f91;
+    --success: #0798c9;
     --warning: #8a6500;
     --danger: #a43e3e;
     --shadow: 0 8px 22px rgba(31, 41, 51, 0.08);
@@ -39,15 +39,15 @@ a {
     padding: 0 30px;
 }
 
-.brand strong {
-    color: var(--primary);
+.brand {
+    align-items: center;
     display: block;
-    font-size: 20px;
 }
 
-.brand span {
-    color: var(--muted);
-    font-size: 13px;
+.brand img {
+    display: block;
+    height: 48px;
+    width: auto;
 }
 
 .topbar nav {
@@ -175,10 +175,20 @@ td small {
     color: #fff;
 }
 
+.button.primary:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
 .button.success {
-    background: var(--success);
-    border-color: var(--success);
+    background: #06aee5;
+    border-color: #06aee5;
     color: #fff;
+}
+
+.button.success:hover {
+    background: #058bbb;
+    border-color: #058bbb;
 }
 
 .button.small {
@@ -405,6 +415,10 @@ textarea {
 
 .ready {
     background: #e3f4e9;
+}
+
+.history {
+    background: #e8eef3;
 }
 
 .waiting {

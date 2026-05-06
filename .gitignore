@@ -9,6 +9,7 @@ __pycache__/
 !.env.example
 secrets/*
 data/*.db
+data/**/*.db
 storage/parcelas/*
 storage/onvio_saida/*
 storage/onvio_browser/*

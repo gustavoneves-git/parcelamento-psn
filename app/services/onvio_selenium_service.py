@@ -15,6 +15,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from app.services.onvio_log_service import registrar_onvio_log
+from app.services.outlook_graph_service import (
+    OutlookGraphErro,
+    OutlookGraphNaoConfigurado,
+    buscar_codigo_onvio,
+)
 
 
 class OnvioConfiguracaoErro(Exception):
@@ -326,7 +331,8 @@ def _autenticar_se_necessario(driver, wait, contexto):
         return
 
     if estado_login == "validacao_adicional":
-        raise OnvioAutomacaoErro(_mensagem_validacao_adicional())
+        _resolver_validacao_adicional(driver, wait, contexto)
+        return
 
     _registrar_etapa(
         contexto,
@@ -341,7 +347,8 @@ def _autenticar_se_necessario(driver, wait, contexto):
     if estado_login == "autenticado":
         return
     if estado_login == "validacao_adicional":
-        raise OnvioAutomacaoErro(_mensagem_validacao_adicional())
+        _resolver_validacao_adicional(driver, wait, contexto)
+        return
 
     email = _campo_email_login(driver)
     senha = _campo_senha_login(driver)
@@ -358,14 +365,16 @@ def _autenticar_se_necessario(driver, wait, contexto):
         _avancar_login(driver)
         senha = wait.until(lambda d: _campo_senha_login(d) or _esta_em_mfa(d))
         if _esta_em_mfa(driver):
-            raise OnvioAutomacaoErro(_mensagem_validacao_adicional())
+            _resolver_validacao_adicional(driver, wait, contexto)
+            return
 
     senha.clear()
     senha.send_keys(current_app.config["ONVIO_PASSWORD"])
     _avancar_login(driver)
     wait.until(lambda d: _esta_em_mfa(d) or not _esta_em_login(d))
     if _esta_em_mfa(driver):
-        raise OnvioAutomacaoErro(_mensagem_validacao_adicional())
+        _resolver_validacao_adicional(driver, wait, contexto)
+        return
 
     _registrar_etapa(
         contexto,
@@ -382,20 +391,51 @@ def _abrir_formulario_login_se_necessario(driver, wait):
 
     url = driver.current_url.lower()
     if "onvio.com.br/login" in url:
-        try:
-            botao = wait.until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, "#trauth-continue-signin-btn"))
-            )
-            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", botao)
-            botao.click()
-        except Exception:
-            _clicar_primeiro_texto(driver, ("Entrar", "Login", "Sign in", "Acessar"))
+        _clicar_inicio_onvio(driver, wait)
 
         wait.until(
             lambda d: "auth.thomsonreuters.com" in d.current_url.lower()
+            or "onvio.com.br/staff/" in d.current_url.lower()
             or bool(_campo_email_login(d))
             or bool(_campo_senha_login(d))
         )
+
+
+def _clicar_inicio_onvio(driver, wait):
+    seletores = (
+        "#trauth-continue-signin-btn",
+        "#trta1-auth0-continue-signin-btn",
+        "button[type='submit']",
+        "button",
+    )
+    ultimo_erro = None
+    for _ in range(2):
+        for seletor in seletores:
+            try:
+                elementos = driver.find_elements(By.CSS_SELECTOR, seletor)
+                for elemento in elementos:
+                    if not elemento.is_displayed() or not elemento.is_enabled():
+                        continue
+                    texto = (elemento.text or "").strip().lower()
+                    if seletor == "button" and "entrar" not in texto:
+                        continue
+                    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", elemento)
+                    try:
+                        elemento.click()
+                    except WebDriverException:
+                        driver.execute_script("arguments[0].click();", elemento)
+                    return
+            except Exception as exc:
+                ultimo_erro = exc
+
+        try:
+            _clicar_primeiro_texto(driver, ("Entrar", "Login", "Sign in", "Acessar"))
+            return
+        except Exception as exc:
+            ultimo_erro = exc
+            wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
+
+    raise OnvioAutomacaoErro("Botao inicial Entrar do Onvio nao foi encontrado.") from ultimo_erro
 
 
 def _estado_login_onvio(driver):
@@ -452,6 +492,58 @@ def _avancar_login(driver):
     _clicar_primeiro_texto(driver, ("Entrar", "Login", "Sign in", "Acessar", "Continuar", "Continue", "Next"))
 
 
+def _resolver_validacao_adicional(driver, wait, contexto):
+    _registrar_etapa(
+        contexto,
+        etapa="codigo_onvio",
+        status="INFO",
+        mensagem="Onvio solicitou codigo de verificacao. Buscando codigo no Outlook via Microsoft Graph.",
+        driver=driver,
+    )
+    try:
+        codigo = buscar_codigo_onvio()
+    except OutlookGraphNaoConfigurado as exc:
+        raise OnvioAutomacaoErro(str(exc)) from exc
+    except OutlookGraphErro as exc:
+        raise OnvioAutomacaoErro(f"Nao foi possivel obter o codigo Onvio no Outlook: {exc}") from exc
+
+    campo_codigo = _campo_codigo_mfa(driver)
+    if not campo_codigo:
+        raise OnvioAutomacaoErro("Onvio solicitou codigo, mas o campo de codigo nao foi encontrado.")
+
+    campo_codigo.clear()
+    campo_codigo.send_keys(codigo)
+    _avancar_login(driver)
+    wait.until(lambda d: not _esta_em_mfa(d) or _estado_login_onvio(d) == "autenticado")
+    if _esta_em_mfa(driver):
+        raise OnvioAutomacaoErro("Codigo Onvio preenchido, mas a validacao adicional permaneceu ativa.")
+
+    _registrar_etapa(
+        contexto,
+        etapa="codigo_onvio",
+        status="SUCESSO",
+        mensagem=f"Codigo Onvio preenchido automaticamente via Outlook Graph: ***{codigo[-3:]}.",
+        driver=driver,
+    )
+
+
+def _campo_codigo_mfa(driver):
+    return _primeiro_presente(
+        driver,
+        (
+            "input[name*='mfa' i]",
+            "input[id*='mfa' i]",
+            "input[name*='code' i]",
+            "input[id*='code' i]",
+            "input[autocomplete='one-time-code']",
+            "input[placeholder*='codigo' i]",
+            "input[placeholder*='código' i]",
+            "input[type='tel']",
+            "input[inputmode='numeric']",
+        ),
+    )
+
+
 def _mensagem_validacao_adicional():
     return (
         "Onvio solicitou validacao adicional de login. "
@@ -470,14 +562,7 @@ def _esta_em_mfa(driver):
     url = driver.current_url.lower()
     if "mfa" in url or "multi-factor" in url or "multifactor" in url:
         return True
-    seletores = (
-        "input[name*='mfa' i]",
-        "input[id*='mfa' i]",
-        "input[name*='code' i]",
-        "input[placeholder*='codigo' i]",
-        "input[placeholder*='código' i]",
-    )
-    return any(driver.find_elements(By.CSS_SELECTOR, seletor) for seletor in seletores)
+    return bool(_campo_codigo_mfa(driver))
 
 
 def _pesquisar_e_abrir_cliente(driver, wait, empresa):
@@ -817,8 +902,11 @@ def _primeiro_presente(driver, seletores):
     for seletor in seletores:
         elementos = driver.find_elements(By.CSS_SELECTOR, seletor)
         for elemento in elementos:
-            if elemento.is_displayed() and elemento.is_enabled():
-                return elemento
+            try:
+                if elemento.is_displayed() and elemento.is_enabled():
+                    return elemento
+            except WebDriverException:
+                continue
     return None
 
 

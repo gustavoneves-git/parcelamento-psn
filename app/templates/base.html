@@ -3,14 +3,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PSN Onvio</title>
+    <title>Consiste PSN</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <header class="topbar">
         <a class="brand" href="{{ url_for('empresas.index') }}">
-            <strong>PSN Onvio</strong>
-            <span>Parcelamento Simples Nacional</span>
+            <img src="{{ url_for('static', filename='img/consiste-logo.svg') }}" alt="Consiste">
         </a>
         <nav>
             <a href="{{ url_for('empresas.index') }}">Empresas</a>

@@ -99,12 +99,26 @@ ONVIO_USER_DATA_DIR=storage/onvio_browser
 ONVIO_WAIT_SECONDS=25
 ```
 
-O fluxo Selenium considera dois cenarios:
+O fluxo Selenium considera estes cenarios:
 
 - sessao Onvio ja autenticada;
 - sessao expirada, com login simples por e-mail e senha.
+- validacao por codigo enviado ao e-mail, usando Microsoft Graph para ler o codigo no Outlook e continuar o login automaticamente.
 
 Para o modo Selenium, rode preferencialmente pelo `run.bat` no Windows, pois ele controla o navegador do desktop.
+
+Configuracao opcional do Microsoft Graph para codigo Onvio:
+
+```text
+MICROSOFT_GRAPH_TENANT_ID=
+MICROSOFT_GRAPH_CLIENT_ID=
+MICROSOFT_GRAPH_CLIENT_SECRET=
+MICROSOFT_GRAPH_USER_EMAIL=
+MICROSOFT_GRAPH_LOOKBACK_MINUTES=10
+MICROSOFT_GRAPH_POLL_SECONDS=45
+```
+
+O app Microsoft deve ter permissao para ler e-mails da caixa configurada, por exemplo `Mail.Read` com consentimento administrativo quando usado em fluxo de aplicativo.
 
 ## Como rodar
 

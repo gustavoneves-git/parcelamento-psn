@@ -69,12 +69,16 @@ def _celula(competencia, parcela):
     if parcela is None:
         return {"competencia": competencia, "classe": "empty", "texto": "-", "detalhe": ""}
 
+    valor_formatado = _formatar_valor(parcela["valor"])
     if parcela["status_onvio"] == "ENVIADO":
         classe = "sent"
-        texto = _formatar_valor(parcela["valor"]) or "Onvio"
+        texto = valor_formatado or "Onvio"
     elif parcela["status_onvio"] == "PRONTO_PARA_SUBIR":
         classe = "ready"
-        texto = _formatar_valor(parcela["valor"]) or "Emitida"
+        texto = valor_formatado or "Emitida"
+    elif valor_formatado:
+        classe = "history"
+        texto = valor_formatado
     elif parcela["status_emissao"] == "AGUARDANDO_API":
         classe = "waiting"
         texto = "API"
