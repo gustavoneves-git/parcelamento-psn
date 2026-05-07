@@ -14,6 +14,14 @@ class OutlookGraphErro(Exception):
     pass
 
 
+class OutlookGraphAutenticacaoErro(OutlookGraphErro):
+    pass
+
+
+class OutlookGraphPermissaoErro(OutlookGraphErro):
+    pass
+
+
 _TOKEN_CACHE = {"access_token": "", "expires_at": 0}
 
 
@@ -27,6 +35,8 @@ def buscar_codigo_onvio():
             codigo = cliente.buscar_codigo_recente()
             if codigo:
                 return codigo
+        except (OutlookGraphAutenticacaoErro, OutlookGraphPermissaoErro):
+            raise
         except OutlookGraphErro as exc:
             ultimo_erro = exc
         time.sleep(5)
@@ -58,7 +68,7 @@ class OutlookGraphClient:
         url = f"https://graph.microsoft.com/v1.0/users/{self.user_email}/messages"
         response = requests.get(url, headers=headers, params=params, timeout=30)
         if response.status_code >= 400:
-            raise OutlookGraphErro(f"Microsoft Graph retornou HTTP {response.status_code}.")
+            raise _erro_graph_leitura(response.status_code, response.text)
 
         for mensagem in response.json().get("value", []):
             if not _parece_email_onvio(mensagem):
@@ -84,7 +94,7 @@ class OutlookGraphClient:
             timeout=30,
         )
         if response.status_code >= 400:
-            raise OutlookGraphErro(f"Falha ao autenticar no Microsoft Graph: HTTP {response.status_code}.")
+            raise _erro_graph_autenticacao(response.status_code, response.text)
 
         payload = response.json()
         access_token = payload.get("access_token")
@@ -108,6 +118,51 @@ class OutlookGraphClient:
             raise OutlookGraphNaoConfigurado(
                 "Microsoft Graph nao configurado. Preencha no .env: " + ", ".join(faltando)
             )
+
+
+def testar_conexao_graph():
+    cliente = OutlookGraphClient()
+    cliente._token()
+    cliente.buscar_codigo_recente()
+    return {
+        "status": "OK",
+        "mensagem": "Microsoft Graph autenticou e conseguiu ler os e-mails recentes.",
+    }
+
+
+def _erro_graph_autenticacao(status_code, resposta):
+    detalhe = _resumo_erro_graph(resposta)
+    if status_code in (400, 401):
+        return OutlookGraphAutenticacaoErro(
+            "Microsoft Graph nao autenticou. Verifique TENANT_ID, CLIENT_ID e CLIENT_SECRET no .env."
+            + detalhe
+        )
+    return OutlookGraphErro(f"Falha ao autenticar no Microsoft Graph: HTTP {status_code}." + detalhe)
+
+
+def _erro_graph_leitura(status_code, resposta):
+    detalhe = _resumo_erro_graph(resposta)
+    if status_code == 403:
+        return OutlookGraphPermissaoErro(
+            "Microsoft Graph autenticou, mas ainda nao tem consentimento de administrador para ler e-mails. "
+            "No Entra, conceda consentimento para Microsoft Graph > Mail.Read do tipo Aplicativo."
+            + detalhe
+        )
+    if status_code == 404:
+        return OutlookGraphErro(
+            "Microsoft Graph autenticou, mas nao encontrou a caixa configurada em MICROSOFT_GRAPH_USER_EMAIL."
+            + detalhe
+        )
+    return OutlookGraphErro(f"Microsoft Graph retornou HTTP {status_code} ao ler e-mails." + detalhe)
+
+
+def _resumo_erro_graph(resposta):
+    if not resposta:
+        return ""
+    texto = resposta[:500].replace("\n", " ").replace("\r", " ").strip()
+    if not texto:
+        return ""
+    return f" Detalhe Microsoft: {texto}"
 
 
 def _parece_email_onvio(mensagem):
