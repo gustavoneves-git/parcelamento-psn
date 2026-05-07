@@ -21,7 +21,6 @@
                 <tr>
                     <th>CNPJ</th>
                     <th>Empresa</th>
-                    <th>Identificador Onvio</th>
                     <th>Disponibilidade PSN</th>
                     <th>PDF</th>
                     <th>Acoes</th>
@@ -35,12 +34,6 @@
                             <strong>{{ empresa.nome_empresa }}</strong>
                             {% if empresa.status_empresa == "INATIVA" %}
                                 <span class="badge muted">INATIVA</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {{ empresa.nome_onvio or "-" }}
-                            {% if empresa.pasta_onvio %}
-                                <small>{{ empresa.pasta_onvio }}</small>
                             {% endif %}
                         </td>
                         <td>
@@ -102,7 +95,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="6" class="empty">Nenhuma empresa cadastrada.</td>
+                        <td colspan="5" class="empty">Nenhuma empresa cadastrada.</td>
                     </tr>
                 {% endfor %}
             </tbody>

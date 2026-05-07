@@ -785,6 +785,7 @@ def _gerenciar_vencimento(driver, wait, nome_arquivo):
     _clicar_texto_aproximado(driver, wait, ("Definir data de vencimento", "Vencimento", "Due date"))
 
     vencimento = _ultimo_dia_mes_atual()
+    _marcar_documento_no_calendario_impostos(driver)
     campo_data = _primeiro_presente(
         driver,
         (
@@ -807,6 +808,29 @@ def _gerenciar_vencimento(driver, wait, nome_arquivo):
         campo_data.send_keys(vencimento.strftime("%d/%m/%Y"))
 
     _clicar_primeiro_texto(driver, ("Salvar", "Aplicar", "Concluir", "OK"))
+
+
+def _marcar_documento_no_calendario_impostos(driver):
+    checkbox = _primeiro_presente(
+        driver,
+        (
+            "input[name='taxDocument']",
+            "input[type='checkbox'][name*='tax' i]",
+            "input[type='checkbox']",
+        ),
+    )
+    if not checkbox:
+        raise OnvioAutomacaoErro("Checkbox do calendario de impostos nao encontrado no Onvio.")
+
+    marcado = (checkbox.get_attribute("checked") or "").lower() in ("true", "checked")
+    marcado = marcado or bool(checkbox.is_selected())
+    if marcado:
+        return
+
+    try:
+        checkbox.click()
+    except WebDriverException:
+        driver.execute_script("arguments[0].click();", checkbox)
 
 
 def _filtrar_documento(driver, wait, nome_arquivo):

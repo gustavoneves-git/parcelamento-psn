@@ -25,7 +25,7 @@ def montar_historico_mensal(ano=None, status_empresa="ATIVA"):
     status_empresa = (status_empresa or "ATIVA").upper()
     if status_empresa not in ("ATIVA", "INATIVA", "TODAS"):
         status_empresa = "ATIVA"
-    meses = [{"competencia": f"{numero}/{ano}", "rotulo": f"{nome}/{ano[-2:]}"} for numero, nome in MESES]
+    meses = [{"competencia": f"{numero}/{ano}", "rotulo": nome} for numero, nome in MESES]
 
     if status_empresa == "TODAS":
         empresas = get_db().execute(
