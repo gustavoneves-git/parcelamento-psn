@@ -788,6 +788,8 @@ def _gerenciar_vencimento(driver, wait, nome_arquivo):
         driver,
         (
             "input[type='date']",
+            "input#dueDate",
+            "input[name='dateField']",
             "input[placeholder*='vencimento' i]",
             "input[aria-label*='vencimento' i]",
             "input[name*='vencimento' i]",
@@ -818,12 +820,28 @@ def _filtrar_documento(driver, wait, nome_arquivo):
     if not campo:
         return
 
-    termo = nome_arquivo
-    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", campo)
+    for termo in _termos_busca_documento(nome_arquivo):
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", campo)
+        campo.click()
+        _definir_valor_input(driver, campo, termo)
+        try:
+            wait.until(lambda d: _encontrar_linha_documento(d, nome_arquivo))
+            return
+        except TimeoutException:
+            continue
+
     campo.click()
-    campo.send_keys(Keys.CONTROL, "a")
-    campo.send_keys(termo)
-    wait.until(lambda d: _texto_visivel_contem(d, termo) or _texto_visivel_contem(d, termo[:30]))
+    _definir_valor_input(driver, campo, "")
+
+
+def _termos_busca_documento(nome_arquivo):
+    nome = Path(nome_arquivo).stem
+    termos = [nome_arquivo, nome]
+    if " - " in nome:
+        termos.append(nome.split(" - ")[0])
+    if "competencia_" in nome:
+        termos.append(nome.split("competencia_", 1)[1])
+    return [termo for termo in termos if termo]
 
 
 def _selecionar_documento_por_nome(driver, wait, nome_arquivo):
@@ -838,14 +856,7 @@ def _selecionar_documento_por_nome(driver, wait, nome_arquivo):
             driver.execute_script("arguments[0].click();", checkbox)
         return
 
-    # O grid do Onvio pode renderizar checkbox como celula visual. O clique
-    # no canto esquerdo da linha replica o clique manual no quadradinho.
-    rect = linha.rect
-    ActionChains(driver).move_to_element_with_offset(
-        linha,
-        12,
-        max(6, min(rect.get("height", 24) / 2, 18)),
-    ).click().perform()
+    _clicar_checkbox_lateral_documento(driver, linha)
 
 
 def _encontrar_linha_documento(driver, nome_arquivo):
@@ -891,11 +902,92 @@ def _checkbox_na_linha(linha):
         elementos = linha.find_elements(By.CSS_SELECTOR, seletor)
         for elemento in elementos:
             try:
-                if elemento.is_enabled():
+                if elemento.is_displayed() and elemento.is_enabled():
                     return elemento
             except WebDriverException:
                 continue
     return None
+
+
+def _clicar_checkbox_lateral_documento(driver, linha):
+    celulas = []
+    for elemento in linha.find_elements(By.CSS_SELECTOR, ".wj-cell, [role='gridcell'], td"):
+        try:
+            if not elemento.is_displayed():
+                continue
+            rect = elemento.rect
+            if rect.get("width", 0) <= 0 or rect.get("height", 0) <= 0:
+                continue
+            celulas.append((rect.get("x", 0), rect.get("y", 0), rect, elemento))
+        except WebDriverException:
+            continue
+
+    if not celulas:
+        raise OnvioAutomacaoErro("Linha do documento encontrada, mas celulas da grade nao foram localizadas.")
+
+    celulas.sort(key=lambda item: (item[1], item[0]))
+    primeira_celula = celulas[0][2]
+    x = max(1, primeira_celula["x"] - 22)
+    y = primeira_celula["y"] + max(6, min(primeira_celula["height"] / 2, 18))
+    _clicar_ponto_tela(driver, x, y)
+
+
+def _clicar_ponto_tela(driver, x, y):
+    try:
+        driver.execute_cdp_cmd("Input.dispatchMouseEvent", {
+            "type": "mousePressed",
+            "x": x,
+            "y": y,
+            "button": "left",
+            "clickCount": 1,
+        })
+        driver.execute_cdp_cmd("Input.dispatchMouseEvent", {
+            "type": "mouseReleased",
+            "x": x,
+            "y": y,
+            "button": "left",
+            "clickCount": 1,
+        })
+        return
+    except WebDriverException:
+        pass
+
+    driver.execute_script(
+        """
+        const x = arguments[0];
+        const y = arguments[1];
+        const target = document.elementFromPoint(x, y);
+        if (!target) {
+            throw new Error(`Nenhum elemento encontrado em ${x},${y}`);
+        }
+        for (const type of ['mousemove', 'mousedown', 'mouseup', 'click']) {
+            target.dispatchEvent(new MouseEvent(type, {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                clientX: x,
+                clientY: y
+            }));
+        }
+        """,
+        x,
+        y,
+    )
+
+
+def _definir_valor_input(driver, elemento, valor):
+    elemento.clear()
+    driver.execute_script(
+        """
+        const input = arguments[0];
+        const value = arguments[1];
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        """,
+        elemento,
+        valor,
+    )
 
 
 def _primeiro_presente(driver, seletores):
