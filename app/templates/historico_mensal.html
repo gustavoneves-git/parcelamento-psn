@@ -7,6 +7,7 @@
         <p>Resumo anual por empresa com valor da parcela emitida e status de envio ao Onvio.</p>
     </div>
     <form class="filter" method="get">
+        <input type="hidden" name="status" value="{{ historico.filtro_status }}">
         <select name="ano">
             {% for ano in historico.anos %}
                 <option value="{{ ano }}" {% if historico.ano == ano %}selected{% endif %}>{{ ano }}</option>
@@ -16,16 +17,12 @@
     </form>
 </section>
 
-<section class="legend">
-    <span><i class="sent"></i> Enviado ao Onvio</span>
-    <span><i class="ready"></i> Valor emitido</span>
-    <span><i class="history"></i> Valor historico</span>
-    <span><i class="waiting"></i> Aguardando API</span>
-    <span><i class="error"></i> Erro</span>
-    <span><i class="empty"></i> Sem registro</span>
-</section>
-
 <section class="panel history-panel">
+    <div class="filters">
+        <a class="filter-link {% if historico.filtro_status == 'ATIVA' %}active{% endif %}" href="{{ url_for('historico.mensal', ano=historico.ano, status='ATIVA') }}">Ativas</a>
+        <a class="filter-link {% if historico.filtro_status == 'INATIVA' %}active{% endif %}" href="{{ url_for('historico.mensal', ano=historico.ano, status='INATIVA') }}">Inativas</a>
+        <a class="filter-link {% if historico.filtro_status == 'TODAS' %}active{% endif %}" href="{{ url_for('historico.mensal', ano=historico.ano, status='TODAS') }}">Todas</a>
+    </div>
     <div class="table-wrap history-wrap">
         <table class="history-table">
             <thead>

@@ -35,7 +35,7 @@ a {
     border-bottom: 1px solid var(--line);
     display: flex;
     justify-content: space-between;
-    min-height: 64px;
+    min-height: 58px;
     padding: 0 30px;
 }
 
@@ -46,7 +46,7 @@ a {
 
 .brand img {
     display: block;
-    height: 48px;
+    height: 32px;
     width: auto;
 }
 
@@ -110,6 +110,11 @@ a {
     display: flex;
     gap: 8px;
     margin-bottom: 16px;
+}
+
+.history-panel .filters {
+    margin-left: 10px;
+    margin-top: 15px;
 }
 
 .filter-link {
