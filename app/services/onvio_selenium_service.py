@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import unicodedata
+from calendar import monthrange
 from datetime import datetime
 from pathlib import Path
 
@@ -783,7 +784,7 @@ def _gerenciar_vencimento(driver, wait, nome_arquivo):
     _aguardar_onvio_ocioso(driver, wait)
     _clicar_texto_aproximado(driver, wait, ("Definir data de vencimento", "Vencimento", "Due date"))
 
-    hoje = datetime.now().strftime("%d/%m/%Y")
+    vencimento = _ultimo_dia_mes_atual()
     campo_data = _primeiro_presente(
         driver,
         (
@@ -801,9 +802,9 @@ def _gerenciar_vencimento(driver, wait, nome_arquivo):
 
     campo_data.clear()
     if campo_data.get_attribute("type") == "date":
-        campo_data.send_keys(datetime.now().strftime("%Y-%m-%d"))
+        campo_data.send_keys(vencimento.strftime("%Y-%m-%d"))
     else:
-        campo_data.send_keys(hoje)
+        campo_data.send_keys(vencimento.strftime("%d/%m/%Y"))
 
     _clicar_primeiro_texto(driver, ("Salvar", "Aplicar", "Concluir", "OK"))
 
@@ -832,6 +833,12 @@ def _filtrar_documento(driver, wait, nome_arquivo):
 
     campo.click()
     _definir_valor_input(driver, campo, "")
+
+
+def _ultimo_dia_mes_atual():
+    hoje = datetime.now()
+    ultimo_dia = monthrange(hoje.year, hoje.month)[1]
+    return hoje.replace(day=ultimo_dia)
 
 
 def _termos_busca_documento(nome_arquivo):
