@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -22,6 +23,14 @@ def _path_from_env(name, default=""):
 class Config:
     VERSION = "0.2.0-psn"
     SECRET_KEY = os.environ.get("PSN_SECRET_KEY", "psn-local-dev")
+    APP_LOGIN_USER = os.environ.get("APP_LOGIN_USER", "")
+    APP_LOGIN_PASSWORD_HASH = os.environ.get("APP_LOGIN_PASSWORD_HASH", "")
+    PERMANENT_SESSION_LIFETIME = timedelta(
+        hours=int(os.environ.get("APP_SESSION_HOURS", "8"))
+    )
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = os.environ.get("APP_SESSION_COOKIE_SECURE", "0") == "1"
     DATABASE_PATH = BASE_DIR / "data" / "psn.db"
     PARCELAS_PATH = BASE_DIR / "storage" / "parcelas"
     ONVIO_SAIDA_PADRAO = BASE_DIR / "storage" / "onvio_saida"

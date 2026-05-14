@@ -9,6 +9,31 @@ Esta versao foi reiniciada com foco no uso cotidiano:
 
 As paginas antigas de dashboard e parcelas emitidas foram removidas para reduzir ruido operacional.
 
+## Login
+
+O sistema exige login antes de acessar as telas internas.
+
+Configure no `.env`:
+
+```text
+APP_LOGIN_USER=
+APP_LOGIN_PASSWORD_HASH=
+APP_SESSION_HOURS=8
+APP_SESSION_COOKIE_SECURE=0
+```
+
+Para gerar o hash da senha:
+
+```bash
+python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('sua-senha'))"
+```
+
+Em producao com HTTPS, use:
+
+```text
+APP_SESSION_COOKIE_SECURE=1
+```
+
 ## Fluxo
 
 1. Cadastre a empresa.

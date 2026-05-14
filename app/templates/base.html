@@ -14,6 +14,11 @@
         <nav>
             <a href="{{ url_for('empresas.index') }}">Empresas</a>
             <a href="{{ url_for('historico.mensal') }}">Historico mensal</a>
+            {% if session.get("autenticado") %}
+                <form class="logout-form" method="post" action="{{ url_for('auth.logout') }}">
+                    <button type="submit">Sair</button>
+                </form>
+            {% endif %}
         </nav>
     </header>
 
