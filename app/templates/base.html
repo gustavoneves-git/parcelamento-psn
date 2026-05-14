@@ -3,14 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Consiste PSN</title>
+    <title>Consiste SN</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <header class="topbar">
-        <a class="brand" href="{{ url_for('empresas.index') }}">
-            <img src="{{ url_for('static', filename='img/consiste-logo.svg') }}" alt="Consiste">
-        </a>
+        <a class="brand" href="{{ url_for('empresas.index') }}">Simples Nacional</a>
         <nav>
             <a href="{{ url_for('empresas.index') }}">Empresas</a>
             <a href="{{ url_for('historico.mensal') }}">Historico mensal</a>
@@ -35,5 +33,9 @@
 
         {% block content %}{% endblock %}
     </main>
+    <footer class="footer">
+        <img src="{{ url_for('static', filename='img/consiste-contabilidade.jpg') }}" alt="Consiste Contabilidade">
+        <p>© Consiste Contabilidade. Todos os direitos reservados. Acesso restrito e uso interno autorizado.</p>
+    </footer>
 </body>
 </html>

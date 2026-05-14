@@ -22,6 +22,7 @@ body {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 15px;
     margin: 0;
+    min-height: 100vh;
 }
 
 a {
@@ -40,14 +41,8 @@ a {
 }
 
 .brand {
-    align-items: center;
-    display: block;
-}
-
-.brand img {
-    display: block;
-    height: 32px;
-    width: auto;
+    color: var(--text);
+    font-weight: 700;
 }
 
 .topbar nav {
@@ -523,4 +518,27 @@ textarea {
     .form-grid {
         grid-template-columns: 1fr;
     }
+}
+
+.footer {
+    align-items: center;
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    min-height: 88px;
+    padding: 18px 28px;
+    text-align: center;
+}
+
+.footer img {
+    height: 34px;
+    object-fit: contain;
+    width: auto;
+}
+
+.footer p {
+    margin: 0;
 }
