@@ -36,6 +36,8 @@ class Config:
     ONVIO_HEADLESS = os.environ.get("ONVIO_HEADLESS", "0") == "1"
     ONVIO_USER_DATA_DIR = _path_from_env("ONVIO_USER_DATA_DIR", "storage/onvio_browser")
     ONVIO_WAIT_SECONDS = int(os.environ.get("ONVIO_WAIT_SECONDS", "25"))
+    ONVIO_SAVE_ERROR_SCREENSHOT = os.environ.get("ONVIO_SAVE_ERROR_SCREENSHOT", "1") == "1"
+    ONVIO_SAVE_ERROR_HTML = os.environ.get("ONVIO_SAVE_ERROR_HTML", "1") == "1"
 
     SERPRO_CONSUMER_KEY = os.environ.get("SERPRO_CONSUMER_KEY", "")
     SERPRO_CONSUMER_SECRET = os.environ.get("SERPRO_CONSUMER_SECRET", "")
@@ -68,3 +70,8 @@ class Config:
     MICROSOFT_GRAPH_USER_EMAIL = os.environ.get("MICROSOFT_GRAPH_USER_EMAIL", ONVIO_EMAIL)
     MICROSOFT_GRAPH_LOOKBACK_MINUTES = int(os.environ.get("MICROSOFT_GRAPH_LOOKBACK_MINUTES", "10"))
     MICROSOFT_GRAPH_POLL_SECONDS = int(os.environ.get("MICROSOFT_GRAPH_POLL_SECONDS", "45"))
+
+    LOG_DIR = _path_from_env("LOG_DIR", "logs")
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+    LOG_MAX_BYTES = int(os.environ.get("LOG_MAX_BYTES", "5242880"))
+    LOG_BACKUP_COUNT = int(os.environ.get("LOG_BACKUP_COUNT", "5"))

@@ -21,6 +21,14 @@ __pycache__/
 *.xls
 *.csv
 *.log
+logs/*
+!logs/.gitkeep
+!logs/screenshots/
+logs/screenshots/*
+!logs/screenshots/.gitkeep
+!logs/html/
+logs/html/*
+!logs/html/.gitkeep
 secrets/*
 data/*.db
 data/**/*.db

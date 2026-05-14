@@ -48,6 +48,7 @@ Servicos PARCSN preparados:
 
 O cliente HTTP central registra logs tecnicos na tabela `serpro_logs`, sem gravar consumer secret.
 As disponibilidades consultadas ficam na tabela `psn_disponibilidades`, incluindo casos em que a API informa que nao ha parcela liberada.
+Em producao, os eventos SERPRO tambem sao gravados em `logs/serpro.log`.
 
 ## Erros internos
 
@@ -59,6 +60,8 @@ Erros internos reais do sistema recebem:
 - tela amigavel para o usuario;
 - log tecnico completo na tabela `erros_internos`;
 - tentativa opcional de envio de e-mail para suporte.
+
+Em producao, erros internos tambem sao gravados em `logs/psn.log`, com stack trace completo e codigo de ocorrencia.
 
 Configuracao opcional de e-mail:
 
@@ -119,6 +122,54 @@ MICROSOFT_GRAPH_POLL_SECONDS=45
 ```
 
 O app Microsoft deve ter permissao para ler e-mails da caixa configurada, por exemplo `Mail.Read` com consentimento administrativo quando usado em fluxo de aplicativo.
+
+Os eventos do Onvio tambem sao gravados em `logs/onvio.log`. Quando uma etapa Selenium falha, o sistema pode salvar automaticamente:
+
+- screenshot da tela em `logs/screenshots`;
+- HTML da pagina em `logs/html`.
+
+Esses arquivos ajudam a diagnosticar erro real em servidor ou em outro computador sem depender da memoria do usuario.
+
+## Logs e producao Oracle
+
+Variaveis recomendadas para servidor:
+
+```text
+LOG_DIR=logs
+LOG_LEVEL=INFO
+LOG_MAX_BYTES=5242880
+LOG_BACKUP_COUNT=5
+ONVIO_HEADLESS=1
+ONVIO_SAVE_ERROR_SCREENSHOT=1
+ONVIO_SAVE_ERROR_HTML=1
+```
+
+Arquivos principais de diagnostico:
+
+```text
+logs/psn.log
+logs/serpro.log
+logs/onvio.log
+logs/screenshots/
+logs/html/
+```
+
+Os arquivos de log, PDFs, certificados e `.env` ficam fora do Git. No servidor, configure o `.env` diretamente na maquina ou por variaveis de ambiente.
+
+Entrada WSGI para servidor:
+
+```text
+wsgi:app
+```
+
+Exemplo Linux/Oracle:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+gunicorn -w 2 -b 0.0.0.0:5050 wsgi:app
+```
 
 ## Como rodar
 

@@ -3,6 +3,7 @@ from werkzeug.exceptions import HTTPException
 
 from app.config import Config
 from app.database import init_app, init_db
+from app.logging_config import setup_logging
 from app.routes.empresas import empresas_bp
 from app.routes.historico import historico_bp
 from app.services.erro_interno_service import registrar_erro_interno
@@ -12,6 +13,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    setup_logging(app)
     init_db()
     init_app(app)
 

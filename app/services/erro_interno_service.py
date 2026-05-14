@@ -1,10 +1,12 @@
 import json
+import logging
 import traceback
 import uuid
 
 from flask import current_app, request
 
 from app.database import get_db
+from app.logging_config import safe_json
 from app.services.email_service import enviar_email_erro_interno
 
 
@@ -69,6 +71,8 @@ def registrar_erro_interno(exc, contexto=None):
     )
     get_db().commit()
 
+    _registrar_arquivo_erro(erro)
+
     try:
         email_enviado, email_erro = enviar_email_erro_interno(erro)
     except Exception as email_exc:
@@ -87,6 +91,25 @@ def registrar_erro_interno(exc, contexto=None):
     get_db().commit()
 
     return erro["codigo_ocorrencia"]
+
+
+def _registrar_arquivo_erro(erro):
+    try:
+        logging.getLogger("psn").error(
+            "erro_interno codigo=%s tipo=%s rota=%s acao=%s empresa_id=%s "
+            "competencia=%s mensagem=%s contexto=%s\n%s",
+            erro["codigo_ocorrencia"],
+            erro["tipo_erro"],
+            erro["rota"],
+            erro["acao"],
+            erro["empresa_id"],
+            erro["competencia"],
+            erro["mensagem_erro"],
+            safe_json(erro.get("contexto_json", "")),
+            erro["stack_trace"],
+        )
+    except Exception:
+        pass
 
 
 def _rota_segura():

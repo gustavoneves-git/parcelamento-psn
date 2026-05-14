@@ -228,6 +228,9 @@ def _registrar_etapa(contexto, etapa, status, mensagem, driver=None, detalhe="")
         "url_atual": _url_atual(driver),
         "detalhe": detalhe,
     }
+    if status == "ERRO":
+        detalhe_tecnico.update(_capturar_artefatos_erro(contexto, etapa, driver))
+
     registrar_onvio_log(
         acao=f"onvio_selenium:{etapa}",
         empresa_id=contexto["empresa_id"],
@@ -236,6 +239,46 @@ def _registrar_etapa(contexto, etapa, status, mensagem, driver=None, detalhe="")
         mensagem=mensagem,
         detalhe_tecnico=json.dumps(detalhe_tecnico, ensure_ascii=True),
     )
+
+
+def _capturar_artefatos_erro(contexto, etapa, driver):
+    if not driver:
+        return {}
+
+    artefatos = {}
+    try:
+        log_dir = Path(current_app.config["LOG_DIR"])
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        cnpj = _texto_arquivo_seguro(contexto["empresa_cnpj"])
+        etapa_segura = _texto_arquivo_seguro(etapa)
+        prefixo = f"onvio_{timestamp}_{cnpj}_{etapa_segura}"
+
+        if current_app.config.get("ONVIO_SAVE_ERROR_SCREENSHOT", True):
+            screenshot_path = log_dir / "screenshots" / f"{prefixo}.png"
+            screenshot_path.parent.mkdir(parents=True, exist_ok=True)
+            driver.save_screenshot(str(screenshot_path))
+            artefatos["screenshot_path"] = str(screenshot_path)
+
+        if current_app.config.get("ONVIO_SAVE_ERROR_HTML", True):
+            html_path = log_dir / "html" / f"{prefixo}.html"
+            html_path.parent.mkdir(parents=True, exist_ok=True)
+            html_path.write_text(driver.page_source[:500000], encoding="utf-8")
+            artefatos["html_path"] = str(html_path)
+    except Exception as exc:
+        artefatos["artifact_error"] = f"{type(exc).__name__}: {exc}"
+
+    return artefatos
+
+
+def _texto_arquivo_seguro(texto):
+    texto = str(texto or "")
+    permitido = []
+    for caractere in texto:
+        if caractere.isalnum() or caractere in ("-", "_"):
+            permitido.append(caractere)
+        else:
+            permitido.append("_")
+    return "".join(permitido).strip("_")[:80] or "sem_identificador"
 
 
 def _url_atual(driver):
