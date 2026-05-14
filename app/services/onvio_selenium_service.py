@@ -343,6 +343,9 @@ def _aplicar_opcoes_navegador(options, user_data_dir):
     options.add_argument("--no-first-run")
     options.add_argument("--no-default-browser-check")
     options.add_argument("--window-size=1366,900")
+    options.add_argument("--disable-dev-shm-usage")
+    if sys.platform != "win32":
+        options.add_argument("--no-sandbox")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
 
 
