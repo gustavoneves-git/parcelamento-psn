@@ -39,7 +39,16 @@
                         <td>
                             {% set disponibilidades = disponibilidades_por_empresa.get(empresa.id, []) %}
                             {% set liberadas = disponibilidades | selectattr("status_disponibilidade", "equalto", "DISPONIVEL") | list %}
-                            {% if liberadas %}
+                            {% if empresa.status_emissao == "EMITIDA" and empresa.caminho_pdf %}
+                                <span class="badge ready">Guia emitida</span>
+                                {% if empresa.status_onvio == "ENVIADO" %}
+                                    <small>Guia enviada ao Onvio.</small>
+                                {% elif empresa.status_onvio == "PRONTO_PARA_SUBIR" %}
+                                    <small>PDF pronto para subir ao Onvio.</small>
+                                {% elif empresa.mensagem %}
+                                    <small>{{ empresa.mensagem }}</small>
+                                {% endif %}
+                            {% elif liberadas %}
                                 <div class="availability-list">
                                     {% for item in liberadas %}
                                         <form method="post" action="{{ url_for('empresas.emitir', empresa_id=empresa.id) }}">
@@ -54,18 +63,14 @@
                                 {% if item.status_disponibilidade == "ERRO_CONSULTA" %}
                                     <span class="badge error">Consulta com erro</span>
                                 {% else %}
-                                    <span class="badge waiting">Nada liberado</span>
+                                    <span class="badge waiting">Sem guia liberada</span>
                                 {% endif %}
                                 {% if item.mensagem %}
                                     <small>{{ item.mensagem }}</small>
                                 {% endif %}
-                            {% elif empresa.status_emissao == "EMITIDA" %}
-                                <span class="badge ready">Emitida</span>
-                                {% if empresa.mensagem %}
-                                    <small>{{ empresa.mensagem }}</small>
-                                {% endif %}
                             {% else %}
-                                <span class="badge muted">Consultar SERPRO</span>
+                                <span class="badge muted">Ainda nao consultado</span>
+                                <small>Clique em Emitir guia para consultar o SERPRO.</small>
                             {% endif %}
                         </td>
                         <td>
