@@ -8,6 +8,7 @@ from app.routes.auth import auth_bp
 from app.routes.empresas import empresas_bp
 from app.routes.historico import historico_bp
 from app.services.erro_interno_service import registrar_erro_interno
+from app.services.onvio_fila_service import iniciar_worker_onvio
 
 
 def create_app():
@@ -21,6 +22,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(empresas_bp)
     app.register_blueprint(historico_bp)
+    iniciar_worker_onvio(app)
 
     @app.before_request
     def exigir_login():

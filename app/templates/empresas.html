@@ -71,6 +71,11 @@
                         <td>
                             {% if empresa.caminho_pdf %}
                                 <span class="pdf-name">{{ empresa.caminho_pdf.split("/")[-1] }}</span>
+                                {% if empresa.fila_onvio_status == "AGUARDANDO" %}
+                                    <span class="badge waiting queue-badge">Na fila Onvio</span>
+                                {% elif empresa.fila_onvio_status == "PROCESSANDO" %}
+                                    <span class="badge ready queue-badge">Enviando ao Onvio</span>
+                                {% endif %}
                             {% else %}
                                 -
                             {% endif %}
@@ -82,12 +87,19 @@
                                     <button class="button small" type="submit">Emitir guia</button>
                                 </form>
                                 <form method="post" action="{{ url_for('empresas.subir_onvio', empresa_id=empresa.id) }}">
+                                    {% set envio_onvio_em_fila = empresa.fila_onvio_status in ["AGUARDANDO", "PROCESSANDO"] %}
                                     <button
-                                        class="button small {% if empresa.status_onvio == 'PRONTO_PARA_SUBIR' %}success{% endif %}"
+                                        class="button small {% if empresa.status_onvio == 'PRONTO_PARA_SUBIR' and not envio_onvio_em_fila %}success{% endif %}"
                                         type="submit"
-                                        {% if empresa.status_onvio != 'PRONTO_PARA_SUBIR' %}disabled{% endif %}
+                                        {% if empresa.status_onvio != 'PRONTO_PARA_SUBIR' or envio_onvio_em_fila %}disabled{% endif %}
                                     >
-                                        Subir para Onvio
+                                        {% if empresa.fila_onvio_status == "AGUARDANDO" %}
+                                            Na fila Onvio
+                                        {% elif empresa.fila_onvio_status == "PROCESSANDO" %}
+                                            Enviando ao Onvio
+                                        {% else %}
+                                            Subir para Onvio
+                                        {% endif %}
                                     </button>
                                 </form>
                             {% endif %}

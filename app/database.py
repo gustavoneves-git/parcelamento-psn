@@ -149,6 +149,34 @@ def init_db():
                 FOREIGN KEY (empresa_id) REFERENCES empresas (id),
                 FOREIGN KEY (parcela_id) REFERENCES parcelas (id)
             );
+
+            CREATE TABLE IF NOT EXISTS onvio_fila (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                empresa_id INTEGER NOT NULL,
+                parcela_id INTEGER NOT NULL,
+                status TEXT NOT NULL
+                    CHECK (status IN (
+                        'AGUARDANDO',
+                        'PROCESSANDO',
+                        'SUCESSO',
+                        'ERRO'
+                    )),
+                tentativas INTEGER NOT NULL DEFAULT 0,
+                mensagem TEXT,
+                data_criacao TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                data_inicio TEXT,
+                data_fim TEXT,
+                data_atualizacao TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (empresa_id) REFERENCES empresas (id),
+                FOREIGN KEY (parcela_id) REFERENCES parcelas (id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_onvio_fila_status
+                ON onvio_fila (status, data_criacao);
+
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_onvio_fila_parcela_ativa
+                ON onvio_fila (parcela_id)
+                WHERE status IN ('AGUARDANDO', 'PROCESSANDO');
             """
         )
         _ensure_column(conn, "psn_disponibilidades", "valor", "REAL")

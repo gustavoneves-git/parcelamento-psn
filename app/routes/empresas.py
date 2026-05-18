@@ -6,7 +6,7 @@ from app.services.empresa_service import (
     criar_empresa,
     listar_empresas_com_parcela_atual,
 )
-from app.services.onvio_service import subir_parcela_onvio
+from app.services.onvio_fila_service import enfileirar_envio_onvio
 from app.services.parcela_service import emitir_parcela_competencia
 from app.services.psn_disponibilidade_service import (
     consultar_e_salvar_disponibilidades,
@@ -81,6 +81,6 @@ def consultar_serpro(empresa_id):
 
 @empresas_bp.route("/<int:empresa_id>/subir-onvio", methods=["POST"])
 def subir_onvio(empresa_id):
-    resultado = subir_parcela_onvio(empresa_id)
+    resultado = enfileirar_envio_onvio(empresa_id)
     flash(resultado["mensagem"], resultado["categoria"])
     return redirect(url_for("empresas.index"))

@@ -542,3 +542,9 @@ textarea {
 .footer p {
     margin: 0;
 }
+
+.queue-badge {
+    display: block;
+    margin-top: 7px;
+    width: fit-content;
+}

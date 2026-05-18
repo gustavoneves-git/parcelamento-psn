@@ -47,6 +47,9 @@ class Config:
     ONVIO_WAIT_SECONDS = int(os.environ.get("ONVIO_WAIT_SECONDS", "25"))
     ONVIO_SAVE_ERROR_SCREENSHOT = os.environ.get("ONVIO_SAVE_ERROR_SCREENSHOT", "1") == "1"
     ONVIO_SAVE_ERROR_HTML = os.environ.get("ONVIO_SAVE_ERROR_HTML", "1") == "1"
+    ONVIO_QUEUE_ENABLED = os.environ.get("ONVIO_QUEUE_ENABLED", "1") == "1"
+    ONVIO_QUEUE_POLL_SECONDS = int(os.environ.get("ONVIO_QUEUE_POLL_SECONDS", "15"))
+    ONVIO_QUEUE_INTERVAL_SECONDS = int(os.environ.get("ONVIO_QUEUE_INTERVAL_SECONDS", "60"))
 
     SERPRO_CONSUMER_KEY = os.environ.get("SERPRO_CONSUMER_KEY", "")
     SERPRO_CONSUMER_SECRET = os.environ.get("SERPRO_CONSUMER_SECRET", "")

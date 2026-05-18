@@ -47,7 +47,10 @@ def listar_empresas_com_parcela_atual(status_empresa="ATIVA"):
             parcelas.status_onvio,
             parcelas.mensagem,
             parcelas.data_emissao,
-            parcelas.data_envio_onvio
+            parcelas.data_envio_onvio,
+            fila_onvio.id AS fila_onvio_id,
+            fila_onvio.status AS fila_onvio_status,
+            fila_onvio.mensagem AS fila_onvio_mensagem
         FROM empresas
         LEFT JOIN parcelas
             ON parcelas.empresa_id = empresas.id
@@ -58,6 +61,9 @@ def listar_empresas_com_parcela_atual(status_empresa="ATIVA"):
                 ORDER BY ultima_parcela.data_atualizacao DESC, ultima_parcela.id DESC
                 LIMIT 1
            )
+        LEFT JOIN onvio_fila AS fila_onvio
+            ON fila_onvio.parcela_id = parcelas.id
+           AND fila_onvio.status IN ('AGUARDANDO', 'PROCESSANDO')
         {filtro_status}
         ORDER BY empresas.nome_empresa
         """,
