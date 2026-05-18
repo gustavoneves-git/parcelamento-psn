@@ -482,8 +482,9 @@ textarea {
 
 .login-logo {
     display: block;
-    height: 34px;
-    margin-bottom: 26px;
+    height: 42px;
+    margin: 0 auto 26px;
+    object-fit: contain;
     width: auto;
 }
 
