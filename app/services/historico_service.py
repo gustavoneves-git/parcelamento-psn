@@ -87,7 +87,7 @@ def _celula(competencia, parcela):
     valor_formatado = _formatar_valor(parcela["valor"])
     if parcela["status_onvio"] == "ENVIADO":
         classe = "sent"
-        texto = valor_formatado or "Onvio"
+        texto = valor_formatado or "Cliente"
     elif parcela["status_onvio"] == "PRONTO_PARA_SUBIR":
         classe = "ready"
         texto = valor_formatado or "Emitida"

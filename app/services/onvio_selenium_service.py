@@ -104,7 +104,7 @@ def subir_pdf_onvio_selenium(empresa, parcela, caminho_pdf):
         _executar_etapa(
             contexto,
             "upload",
-            "PDF enviado para o Onvio.",
+            "PDF enviado ao cliente.",
             _fazer_upload,
             driver,
             wait,
@@ -126,10 +126,10 @@ def subir_pdf_onvio_selenium(empresa, parcela, caminho_pdf):
             contexto,
             etapa="concluir",
             status="SUCESSO",
-            mensagem="Documento enviado ao Onvio com sucesso.",
+            mensagem="Documento enviado ao cliente com sucesso.",
             driver=driver,
         )
-        return "Guia de parcelamento subida com sucesso para Onvio."
+        return "Guia enviada ao cliente com sucesso."
     except (OnvioConfiguracaoErro, OnvioAutomacaoErro):
         raise
     except Exception as exc:
@@ -142,7 +142,7 @@ def subir_pdf_onvio_selenium(empresa, parcela, caminho_pdf):
             detalhe=f"{type(exc).__name__}: {exc}",
         )
         raise OnvioAutomacaoErro(
-            "Nao foi possivel concluir o upload no Onvio. Verifique login, cliente e pasta."
+            "Nao foi possivel concluir o envio ao cliente. Verifique login, cliente e destino."
         ) from exc
     finally:
         if driver and current_app.config["ONVIO_HEADLESS"]:

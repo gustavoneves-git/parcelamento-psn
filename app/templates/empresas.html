@@ -4,7 +4,7 @@
 <section class="page-title">
     <div>
         <h1>Empresas</h1>
-        <p>Emita a guia e suba o PDF para a pasta Onvio da Consiste Contabilidade.</p>
+        <p>Emita a guia e envie o PDF para a area do cliente na Consiste Contabilidade.</p>
     </div>
     <a class="button primary" href="{{ url_for('empresas.nova') }}">Nova empresa</a>
 </section>
@@ -42,9 +42,9 @@
                             {% if empresa.status_emissao == "EMITIDA" and empresa.caminho_pdf %}
                                 <span class="badge ready">Guia emitida</span>
                                 {% if empresa.status_onvio == "ENVIADO" %}
-                                    <small>Guia enviada ao Onvio.</small>
+                                    <small>Guia enviada ao cliente.</small>
                                 {% elif empresa.status_onvio == "PRONTO_PARA_SUBIR" %}
-                                    <small>PDF pronto para subir ao Onvio.</small>
+                                    <small>PDF pronto para enviar ao cliente.</small>
                                 {% elif empresa.mensagem %}
                                     <small>{{ empresa.mensagem }}</small>
                                 {% endif %}
@@ -77,9 +77,9 @@
                             {% if empresa.caminho_pdf %}
                                 <span class="pdf-name">{{ empresa.caminho_pdf.split("/")[-1] }}</span>
                                 {% if empresa.fila_onvio_status == "AGUARDANDO" %}
-                                    <span class="badge waiting queue-badge">Na fila Onvio</span>
+                                    <span class="badge waiting queue-badge">Na fila de envio</span>
                                 {% elif empresa.fila_onvio_status == "PROCESSANDO" %}
-                                    <span class="badge ready queue-badge">Enviando ao Onvio</span>
+                                    <span class="badge ready queue-badge">Enviando ao cliente</span>
                                 {% endif %}
                             {% else %}
                                 -
@@ -99,11 +99,11 @@
                                         {% if empresa.status_onvio != 'PRONTO_PARA_SUBIR' or envio_onvio_em_fila %}disabled{% endif %}
                                     >
                                         {% if empresa.fila_onvio_status == "AGUARDANDO" %}
-                                            Na fila Onvio
+                                            Na fila de envio
                                         {% elif empresa.fila_onvio_status == "PROCESSANDO" %}
-                                            Enviando ao Onvio
+                                            Enviando ao cliente
                                         {% else %}
-                                            Subir para Onvio
+                                            Enviar ao cliente
                                         {% endif %}
                                     </button>
                                 </form>

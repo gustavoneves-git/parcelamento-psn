@@ -24,7 +24,7 @@ def enfileirar_envio_onvio(empresa_id):
     if empresa is None:
         return _resultado("Empresa nao encontrada.", "error")
     if parcela is None or parcela["status_onvio"] != "PRONTO_PARA_SUBIR":
-        return _resultado("Nao existe guia emitida pronta para subir ao Onvio.", "warning")
+        return _resultado("Nao existe guia emitida pronta para enviar ao cliente.", "warning")
     if not parcela["caminho_pdf"]:
         return _resultado("A parcela nao possui PDF salvo.", "error")
     if not Path(parcela["caminho_pdf"]).exists():
@@ -33,15 +33,15 @@ def enfileirar_envio_onvio(empresa_id):
     fila_ativa = _buscar_fila_ativa(parcela["id"])
     if fila_ativa:
         if fila_ativa["status"] == "PROCESSANDO":
-            return _resultado("Envio ao Onvio ja esta em andamento para essa guia.", "warning")
-        return _resultado("Guia ja esta na fila de envio ao Onvio.", "warning")
+            return _resultado("Envio ao cliente ja esta em andamento para essa guia.", "warning")
+        return _resultado("Guia ja esta na fila de envio ao cliente.", "warning")
 
     get_db().execute(
         """
         INSERT INTO onvio_fila (empresa_id, parcela_id, status, mensagem)
         VALUES (?, ?, 'AGUARDANDO', ?)
         """,
-        (empresa_id, parcela["id"], "Aguardando processamento do envio ao Onvio."),
+        (empresa_id, parcela["id"], "Aguardando processamento do envio ao cliente."),
     )
     get_db().commit()
 
@@ -61,7 +61,7 @@ def enfileirar_envio_onvio(empresa_id):
         ),
     )
     _notificar_worker()
-    return _resultado("Guia adicionada a fila de envio ao Onvio.", "success")
+    return _resultado("Guia adicionada a fila de envio ao cliente.", "success")
 
 
 def iniciar_worker_onvio(app):
@@ -169,7 +169,7 @@ def _reservar_proximo_item():
         UPDATE onvio_fila
         SET status = 'PROCESSANDO',
             tentativas = tentativas + 1,
-            mensagem = 'Processando envio ao Onvio.',
+            mensagem = 'Processando envio ao cliente.',
             data_inicio = COALESCE(data_inicio, CURRENT_TIMESTAMP),
             data_atualizacao = CURRENT_TIMESTAMP
         WHERE id = ?

@@ -4,7 +4,7 @@
 <section class="page-title">
     <div>
         <h1>{{ titulo }}</h1>
-        <p>Configure a empresa e a pasta onde a guia deve aparecer para o Onvio.</p>
+        <p>Configure a empresa e o destino onde a guia deve ficar disponivel ao cliente.</p>
     </div>
     <a class="button" href="{{ url_for('empresas.index') }}">Voltar</a>
 </section>
@@ -19,7 +19,7 @@
         <input name="nome_empresa" value="{{ empresa.nome_empresa or '' }}" required>
     </label>
     <label>
-        Identificador Onvio
+        Identificador do cliente
         <input name="nome_onvio" value="{{ empresa.nome_onvio or '' }}" placeholder="Ex: 165, se precisar">
     </label>
     <label>
@@ -30,8 +30,8 @@
         </select>
     </label>
     <label class="full">
-        Pasta Onvio
-        <input name="pasta_onvio" value="{{ empresa.pasta_onvio or '' }}" placeholder="Ex: C:\Onvio\Clientes\Empresa\Guias">
+        Destino do cliente
+        <input name="pasta_onvio" value="{{ empresa.pasta_onvio or '' }}" placeholder="Ex: Fiscal > Parcelamentos">
     </label>
     <label class="full">
         Observacao

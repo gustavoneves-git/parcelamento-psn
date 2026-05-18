@@ -22,7 +22,7 @@ def subir_parcela_onvio(empresa_id):
     if empresa is None:
         return _resultado("Empresa nao encontrada.", "error")
     if parcela is None or parcela["status_onvio"] != "PRONTO_PARA_SUBIR":
-        return _resultado("Nao existe guia emitida pronta para subir ao Onvio.", "warning")
+        return _resultado("Nao existe guia emitida pronta para enviar ao cliente.", "warning")
     if not parcela["caminho_pdf"]:
         return _resultado("A parcela nao possui PDF salvo.", "error")
 
@@ -69,7 +69,7 @@ def subir_parcela_onvio(empresa_id):
         empresa_id=empresa_id,
         parcela_id=parcela["id"],
         status="SUCESSO",
-        mensagem="PDF copiado para pasta Onvio.",
+        mensagem="PDF copiado para o destino do cliente.",
         detalhe_tecnico=json.dumps(
             {
                 "modo": "pasta",
@@ -82,7 +82,7 @@ def subir_parcela_onvio(empresa_id):
         ),
     )
 
-    mensagem = "Guia de parcelamento subida com sucesso para Onvio."
+    mensagem = "Guia enviada ao cliente com sucesso."
     _marcar_parcela_enviada(parcela["id"], mensagem)
     return _resultado(mensagem, "success")
 
